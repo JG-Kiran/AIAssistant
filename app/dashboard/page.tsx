@@ -8,7 +8,6 @@ import { ProfileMenu } from "../components/ProfileMenu";
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
 import CustomerChat from "../components/CustomerChat";
-import CustomerInfo from "../components/CustomerInfo";
 
 export default function DashboardPage() {
 
@@ -30,7 +29,6 @@ export default function DashboardPage() {
         <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
         <CustomerChat selectedTicketId={selectedTicketId}/>
         <ProfileBar />
-      {/* <CustomerInfo /> */}
     </main>
   );
 }
