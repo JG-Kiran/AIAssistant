@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation';
 import SidebarPrimary from "./components/ProfileBar";
 import TicketList from "./components/TicketList";
 import CustomerChat from "./components/CustomerChat";
-import CustomerInfo from "./components/CustomerInfo";
 
 export default function Home() {
   redirect('/login');
@@ -18,7 +17,6 @@ export default function Home() {
       <SidebarPrimary />
       <TicketList onSelectTicket={setSelectedTicketId} />
       <CustomerChat selectedTicketId={selectedTicketId} />
-      <CustomerInfo />
     </main>
   );
 }
