@@ -1,0 +1,162 @@
+'use client';
+
+import { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase'
+import { generateAIResponse } from '../lib/gemini';
+import AIResponsePanel from './AIResponsePanel';
+
+export interface ChatMessage {
+  id: number;
+  type: 'customer' | 'agent';
+  name?: string;
+  text: string;
+  created_at?: string;
+}
+
+export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
+  const [message, setMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
+    id: 0,
+    type: 'customer',
+    name: '',
+    text: '',
+    created_at: new Date().toISOString(),
+  }]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedTicketId) {
+        setChatMessages([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('threads')
+        .select('*')
+        .eq('ticket_reference_id', selectedTicketId)
+        .order('created_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+
+      const formatted: ChatMessage[] = data.map((msg: any) => ({
+        id: msg.id,
+        type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer') as 'agent' | 'customer',
+        name: msg.author_name,
+        text: msg.message,
+        created_at: msg.created_time || new Date().toISOString(),
+      }));
+
+      setChatMessages(formatted);
+    };
+    
+    fetchMessages();
+  }, [selectedTicketId]);
+
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          type: 'agent',
+          text: message,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setMessage('');
+    }
+  };
+
+  const formatMessageTime = (timestamp: string | undefined) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  return (
+    <section className="flex flex-1 flex-row h-full bg-white">
+      <div className="flex-[2] flex flex-col p-4">
+        <h2 className="text-xl font-semibold mb-4">Customer</h2>
+
+        <div className="flex-1 overflow-y-auto mb-4">
+          {selectedTicketId === null ? (
+            <p className="text-gray-500">Select a ticket to view the conversation.</p>
+          ) : (
+            chatMessages.map((msg) => (
+              <div key={msg.id} className={`flex mb-4 ${msg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                {msg.type === 'customer' && (
+                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm text-gray-600 mb-1">
+                    {msg.name}
+                  </span>
+                  <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
+                    msg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                    }`}>
+                    {msg.text}
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1">
+                    {formatMessageTime(msg.created_at)}
+                  </span>
+                </div>
+                {msg.type === 'agent' && (
+                  <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        {selectedTicketId !== null && (
+          <div className="flex h-1/5 border-t border-gray-300 pt-4">
+            <textarea
+              placeholder="Type your message..."
+              className="flex-1 p-2 border border-gray-300 rounded-md mr-2 resize-none overflow-y-auto leading-relaxed"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();    // Prevent newline
+                  handleSendMessage();
+                }
+              }}
+            />
+            <div className="flex items-end">
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-md whitespace-nowrap flex-shrink-0"
+                onClick={handleSendMessage}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
+        </div>
+
+        <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
+          <AIResponsePanel
+            chatMessages={chatMessages}
+            onSelectSuggestion={(s) => setMessage(s)}
+          />
+        </div>
+    </section>
+  );
+} 

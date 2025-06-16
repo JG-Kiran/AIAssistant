@@ -1,0 +1,27 @@
+{
+  "name": "customer-support-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.50.0",
+    "next": "latest",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "start": "next start",
+    "build": "next build",
+    "lint": "next lint"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^4.9.5"
+  }
+}
