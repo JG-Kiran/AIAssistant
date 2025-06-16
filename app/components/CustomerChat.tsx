@@ -1,8 +1,7 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'
-import { generateAIResponse } from '../lib/gemini';
 import AIResponsePanel from './AIResponsePanel';
 
 export interface ChatMessage {
