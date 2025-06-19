@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
             author_type: threadPayload.author.type,
             author_name: threadPayload.author.name,
             created_time: threadPayload.createdTime || new Date().toISOString(),
-            mode: threadPayload.channel || null,
+            channel: threadPayload.channel || null,
             // Add any additional fields that might be useful
             raw_data: JSON.stringify(threadPayload) // Store original payload for debugging
           };
