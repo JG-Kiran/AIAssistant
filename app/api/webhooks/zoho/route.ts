@@ -35,25 +35,15 @@ export async function POST(request: NextRequest) {
     // Loop through each event object in the array.
     for (const event of eventArray) {
       console.log('Received Zoho Webhook (Raw Event Object):', event); // Log the whole object
-      console.log('Testing log - After parsing JSON'); // Your current test log
 
       const payload = event?.payload;
-      const eventType = event.eventType; // This is the string we're checking
-
-      console.log('Extracted eventType:', eventType); // !!! IMPORTANT: Log the exact string here !!!
-      console.log('Type of eventType:', typeof eventType); // !!! Also check its type
+      const eventType = event.eventType;
 
       // Add checks for common issues like null/undefined eventType
       if (!eventType) {
         console.error('❌ eventType is missing or null/undefined in the webhook payload.');
         return new Response('eventType missing', { status: 400 });
       }
-
-      // Now, run specific checks to see which condition it *would* meet
-      console.log(`Is eventType 'Ticket_Thread_Add'? ${eventType === "Ticket_Thread_Add"}`);
-      console.log(`Is eventType 'Ticket_Add'? ${eventType === "Ticket_Add"}`);
-      console.log(`Is eventType 'Ticket_Update'? ${eventType === "Ticket_Update"}`);
-      console.log(`Is eventType 'Ticket_Deleted'? ${eventType === "Ticket_Deleted"}`);
 
       // Ticket Thread Add
       if (eventType === 'Ticket_Thread_Add') {
@@ -68,17 +58,11 @@ export async function POST(request: NextRequest) {
           });
           return new Response('Missing required fields', { status: 400 });
         }
-        
-        console.log('🎯 Processing Ticket Thread Add:', {
-          ticketId: threadPayload.ticketId,
-          direction: threadPayload.direction,
-          author: threadPayload.author?.name,
-          contentLength: threadPayload.content?.length
-        });
 
         try {
           // Prepare thread data for Supabase
           const threadData = {
+            id: threadPayload.id,
             ticket_reference_id: threadPayload.ticketId,
             message: threadPayload.content,
             direction: threadPayload.direction,
@@ -86,8 +70,6 @@ export async function POST(request: NextRequest) {
             author_name: threadPayload.author.name,
             created_time: threadPayload.createdTime || new Date().toISOString(),
             channel: threadPayload.channel || null,
-            // Add any additional fields that might be useful
-            // raw_data: JSON.stringify(threadPayload) // Store original payload for debugging
           };
 
           // Insert the thread into Supabase
