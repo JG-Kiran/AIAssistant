@@ -108,7 +108,56 @@ export async function POST(request: NextRequest) {
 
     if (eventType === "Ticket_Add") {
       console.log('🎟️ New ticket created:', payload);
-      // Add ticket creation logic here if needed
+      // Map Zoho payload fields to tickets table schema
+      const ticketData = {
+        ticket_id: payload.id || null,
+        ticket_reference_id: payload.ticketNumber || payload.id?.toString() || null,
+        contact_name: payload.contact?.name || null,
+        contact_id: payload.contact?.id || null,
+        ticket_owner: payload.owner?.name || null,
+        ticket_owner_id: payload.owner?.id || null,
+        modified_by: payload.modifiedBy?.name || null,
+        modified_by_id: payload.modifiedBy?.id || null,
+        created_time: payload.createdTime || null,
+        modified_time: payload.modifiedTime || null,
+        due_date: payload.dueDate || null,
+        priority: payload.priority || null,
+        mode: payload.channel || null,
+        ticket_closed_time: payload.closedTime || null,
+        is_overdue: payload.isOverdue || null,
+        is_escalated: payload.isEscalated || null,
+        time_to_respond: payload.timeToRespond || null,
+        language: payload.language || null,
+        email: payload.email || null,
+        phone: payload.phone || null,
+        subject: payload.subject || null,
+        description: payload.description || null,
+        status: payload.status || null
+      };
+
+      // Validate required fields
+      if (!ticketData.ticket_id || !ticketData.ticket_reference_id) {
+        console.error('❌ Missing required ticket fields:', {
+          ticket_id: !!ticketData.ticket_id,
+          ticket_reference_id: !!ticketData.ticket_reference_id
+        });
+        return new Response('Missing required ticket fields', { status: 400 });
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .insert([ticketData])
+          .select();
+        if (error) {
+          console.error('❌ Error inserting ticket into Supabase:', error);
+          return new Response('Database error', { status: 500 });
+        }
+        console.log('✅ Ticket inserted:', data);
+      } catch (dbError) {
+        console.error('❌ Database operation failed:', dbError);
+        return new Response('Database operation failed', { status: 500 });
+      }
     }
 
     if (eventType === "Ticket_Update") {
