@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
             created_time: threadPayload.createdTime || new Date().toISOString(),
             channel: threadPayload.channel || null,
             // Add any additional fields that might be useful
-            raw_data: JSON.stringify(threadPayload) // Store original payload for debugging
+            // raw_data: JSON.stringify(threadPayload) // Store original payload for debugging
           };
 
           // Insert the thread into Supabase
