@@ -1,24 +1,12 @@
 import { NextRequest } from 'next/server';
 import { supabase } from '../../../lib/supabase';
+import { TicketPayload, ThreadPayload } from './types';
 
 interface Event {
   payload: any;
   eventTime: string;
   eventType: string;
   orgId: string;
-}
-
-interface ThreadPayload {
-  ticketId: string;
-  id: string;
-  content: string;
-  author: {
-    name: string;
-    type: string;
-  };
-  createdTime: string;
-  channel: string;
-  direction: 'in' | 'out';
 }
 
 export async function POST(request: NextRequest) {
@@ -60,16 +48,17 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          // Prepare thread data for Supabase
+          // Prepare thread data for Supabase (only fields in threads table schema)
           const threadData = {
             id: threadPayload.id,
             ticket_reference_id: threadPayload.ticketId,
+            author_id: threadPayload.author?.id || null,
+            author_name: threadPayload.author?.name || null,
+            author_type: threadPayload.author?.type || null,
             message: threadPayload.content,
-            direction: threadPayload.direction,
-            author_type: threadPayload.author.type,
-            author_name: threadPayload.author.name,
             created_time: threadPayload.createdTime || new Date().toISOString(),
             channel: threadPayload.channel || null,
+            direction: threadPayload.direction,
           };
 
           // Insert the thread into Supabase
@@ -83,23 +72,39 @@ export async function POST(request: NextRequest) {
             return new Response('Database error', { status: 500 });
           }
 
-          // Update the ticket's last_updated timestamp
+          // Update the ticket with any relevant fields present in the thread payload
           try {
+            const ticketUpdate: any = {};
+            // Set modified_time, modified_by, modified_by_id
+            ticketUpdate.modified_time = threadPayload.createdTime ? threadPayload.createdTime : new Date().toISOString();
+            if ('author' in threadPayload && threadPayload.author && typeof threadPayload.author === 'object') {
+              ticketUpdate.modified_by = threadPayload.author.name || null;
+              ticketUpdate.modified_by_id = threadPayload.author.id || null;
+            }
+            // Example: update status, priority, assignee, etc. if present in threadPayload
+            if ('status' in threadPayload) ticketUpdate.status = threadPayload.status;
+            if ('priority' in threadPayload) ticketUpdate.priority = threadPayload.priority;
+            if ('assignee' in threadPayload && typeof threadPayload.assignee === 'object' && threadPayload.assignee !== null) {
+              const assignee = threadPayload.assignee as { firstName?: string; lastName?: string; id?: string };
+              ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
+              ticketUpdate.ticket_owner_id = ('assigneeId' in threadPayload) ? threadPayload.assigneeId : assignee.id;
+            } else if ('assigneeId' in threadPayload) {
+              ticketUpdate.ticket_owner_id = threadPayload.assigneeId;
+            }
+
             const { error: updateError } = await supabase
               .from('tickets')
-              .update({ 
-                last_updated: new Date().toISOString(),
-              })
+              .update(ticketUpdate)
               .eq('ticket_reference_id', threadPayload.ticketId);
 
             if (updateError) {
-              console.warn('⚠️ Warning: Could not update ticket timestamp:', updateError);
+              console.warn('⚠️ Warning: Could not update ticket fields:', updateError);
               // Don't fail the webhook for this, just log the warning
             } else {
-              console.log('✅ Updated ticket timestamp for:', threadPayload.ticketId);
+              console.log('✅ Updated ticket fields for:', threadPayload.ticketId);
             }
           } catch (updateError) {
-            console.warn('⚠️ Warning: Error updating ticket timestamp:', updateError);
+            console.warn('⚠️ Warning: Error updating ticket fields:', updateError);
           }
           
         } catch (dbError) {
@@ -109,32 +114,41 @@ export async function POST(request: NextRequest) {
       }
 
       if (eventType === 'Ticket_Add') {
-        console.log('🎟️ New ticket created:', payload);
-        // Map Zoho payload fields to tickets table schema
+        const ticketPayload: TicketPayload = payload;
+        console.log('🎟️ New ticket created:', ticketPayload);
+        // Map Zoho payload fields to tickets table schema using the interface
         const ticketData = {
-          ticket_id: payload.ticketNumber || null,
-          ticket_reference_id: payload.id ||  null,
-          contact_name: payload.contact?.name || null,
-          contact_id: payload.contact?.id || null,
-          ticket_owner: payload.owner?.name || null,
-          ticket_owner_id: payload.owner?.id || null,
-          modified_by: payload.modifiedBy?.name || null,
-          modified_by_id: payload.modifiedBy?.id || null,
-          created_time: payload.createdTime || null,
-          modified_time: payload.modifiedTime || null,
-          due_date: payload.dueDate || null,
-          priority: payload.priority || null,
-          mode: payload.channel || null,
-          ticket_closed_time: payload.closedTime || null,
-          is_overdue: payload.isOverdue || null,
-          is_escalated: payload.isEscalated || null,
-          time_to_respond: payload.timeToRespond || null,
-          language: payload.language || null,
-          email: payload.email || null,
-          phone: payload.phone || null,
-          subject: payload.subject || null,
-          description: payload.description || null,
-          status: payload.status || null
+          ticket_id: ticketPayload.ticketNumber || null,
+          ticket_reference_id: ticketPayload.id || null,
+          department_id: ticketPayload.departmentId || null,
+          contact_name: ticketPayload.contact ? [ticketPayload.contact.firstName, ticketPayload.contact.lastName].filter(Boolean).join(' ') : null,
+          contact_id: ticketPayload.contactId || ticketPayload.contact?.id || null,
+          email: ticketPayload.email || ticketPayload.contact?.email || null,
+          phone: ticketPayload.phone || ticketPayload.contact?.phone || null,
+          subject: ticketPayload.subject || null,
+          description: ticketPayload.description || null,
+          status: ticketPayload.status || null,
+          product_id: ticketPayload.productId || null,
+          ticket_owner: ticketPayload.assignee ? [ticketPayload.assignee.firstName, ticketPayload.assignee.lastName].filter(Boolean).join(' ') : null,
+          ticket_owner_id: ticketPayload.assigneeId || ticketPayload.assignee?.id || null,
+          created_by_id: ticketPayload.createdBy || null,
+          modified_by_id: ticketPayload.modifiedBy || null,
+          created_time: ticketPayload.createdTime || null,
+          modified_time: ticketPayload.modifiedTime || null,
+          resolution: ticketPayload.resolution || null,
+          account_id: ticketPayload.accountId || null,
+          due_date: ticketPayload.dueDate || null,
+          priority: ticketPayload.priority || null,
+          mode: ticketPayload.channel || null,
+          category: ticketPayload.category || null,
+          sub_category: ticketPayload.subCategory || null,
+          ticket_closed_time: ticketPayload.closedTime || null,
+          is_overdue: ticketPayload.isOverDue || null,
+          is_escalated: ticketPayload.isEscalated || null,
+          classification: ticketPayload.classification || null,
+          team_id: ticketPayload.teamId || null,
+          ticket_on_hold_time: ticketPayload.onholdTime || null,
+          language: ticketPayload.language || null,
         };
 
         // Validate required fields
