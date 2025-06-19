@@ -120,35 +120,44 @@ export async function POST(request: NextRequest) {
         const ticketData = {
           ticket_id: ticketPayload.ticketNumber || null,
           ticket_reference_id: ticketPayload.id || null,
-          department_id: ticketPayload.departmentId || null,
           contact_name: ticketPayload.contact ? [ticketPayload.contact.firstName, ticketPayload.contact.lastName].filter(Boolean).join(' ') : null,
           contact_id: ticketPayload.contactId || ticketPayload.contact?.id || null,
+          ticket_owner: ticketPayload.assignee ? [ticketPayload.assignee.firstName, ticketPayload.assignee.lastName].filter(Boolean).join(' ') : null,
+          ticket_owner_id: ticketPayload.assigneeId || ticketPayload.assignee?.id || null,
+          modified_by_id: ticketPayload.modifiedBy || null,
+          created_time: ticketPayload.createdTime || null,
+          modified_time: ticketPayload.modifiedTime || null,
+          due_date: ticketPayload.dueDate || null,
+          priority: ticketPayload.priority || null,
+          mode: ticketPayload.channel || null,
+          ticket_closed_time: ticketPayload.closedTime || null,
+          is_overdue: ticketPayload.isOverDue || null,
+          is_escalated: ticketPayload.isEscalated || null,
+          // time_to_respond: 
+          language: ticketPayload.language || null,
           email: ticketPayload.email || ticketPayload.contact?.email || null,
           phone: ticketPayload.phone || ticketPayload.contact?.phone || null,
           subject: ticketPayload.subject || null,
           description: ticketPayload.description || null,
           status: ticketPayload.status || null,
+          // department: '',
+          department_id: ticketPayload.departmentId || null,
+          // product_name: 
           product_id: ticketPayload.productId || null,
-          ticket_owner: ticketPayload.assignee ? [ticketPayload.assignee.firstName, ticketPayload.assignee.lastName].filter(Boolean).join(' ') : null,
-          ticket_owner_id: ticketPayload.assigneeId || ticketPayload.assignee?.id || null,
+          // created_by: 
           created_by_id: ticketPayload.createdBy || null,
-          modified_by_id: ticketPayload.modifiedBy || null,
-          created_time: ticketPayload.createdTime || null,
-          modified_time: ticketPayload.modifiedTime || null,
           resolution: ticketPayload.resolution || null,
+          // to_address: 
+          // account_name: 
           account_id: ticketPayload.accountId || null,
-          due_date: ticketPayload.dueDate || null,
-          priority: ticketPayload.priority || null,
-          mode: ticketPayload.channel || null,
           category: ticketPayload.category || null,
           sub_category: ticketPayload.subCategory || null,
-          ticket_closed_time: ticketPayload.closedTime || null,
-          is_overdue: ticketPayload.isOverDue || null,
-          is_escalated: ticketPayload.isEscalated || null,
           classification: ticketPayload.classification || null,
+          // team: 
           team_id: ticketPayload.teamId || null,
-          ticket_on_hold_time: ticketPayload.onholdTime || null,
-          language: ticketPayload.language || null,
+          // tags: 
+          ticket_on_hold_time: ticketPayload.onholdTime || '0',
+          child_ticket_time: '0',
         };
 
         // Validate required fields

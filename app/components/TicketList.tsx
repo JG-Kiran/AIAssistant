@@ -166,7 +166,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                       {ticket.mode}
                     </p>
                   )}
-                  {ticket.created_time && <p className="text-sm text-gray-500">{ticket.created_time}</p>}
+                  {ticket.created_time && <p className="text-sm text-gray-500">{ticket.created_time.toISOString()}</p>}
                 </div>
               </div>
             </li>
