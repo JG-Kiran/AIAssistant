@@ -29,12 +29,35 @@ export async function POST(request: NextRequest) {
   try {
     const event = await request.json();
 
-    const payload = event?.payload;
-    const eventType = event.eventType;
+    console.log('Received Zoho Webhook (Raw Event Object):', event); // Log the whole object
+    console.log('Testing log - After parsing JSON'); // Your current test log
 
-    // Log or process the webhook payload
-    console.log('Received Zoho Webhook:', JSON.stringify(event, null, 2));
-    console.log('Testing log');
+    const payload = event?.payload;
+    const eventType = event.eventType; // This is the string we're checking
+
+    console.log('Extracted eventType:', eventType); // !!! IMPORTANT: Log the exact string here !!!
+    console.log('Type of eventType:', typeof eventType); // !!! Also check its type
+
+    // Add checks for common issues like null/undefined eventType
+    if (!eventType) {
+      console.error('❌ eventType is missing or null/undefined in the webhook payload.');
+      return new Response('eventType missing', { status: 400 });
+    }
+
+    // Now, run specific checks to see which condition it *would* meet
+    console.log(`Is eventType 'Ticket_Thread_Add'? ${eventType === "Ticket_Thread_Add"}`);
+    console.log(`Is eventType 'Ticket_Add'? ${eventType === "Ticket_Add"}`);
+    console.log(`Is eventType 'Ticket_Update'? ${eventType === "Ticket_Update"}`);
+    console.log(`Is eventType 'Ticket_Deleted'? ${eventType === "Ticket_Deleted"}`);
+    // You might also want to log the payload here if it's not too big
+    // console.log('Payload:', payload);
+    
+    // const payload = event?.payload;
+    // const eventType = event.eventType;
+
+    // // Log or process the webhook payload
+    // console.log('Received Zoho Webhook:', JSON.stringify(event, null, 2));
+    // console.log('Testing log');
 
     // Ticket Thread Add
     if (eventType === 'Ticket_Thread_Add') {
