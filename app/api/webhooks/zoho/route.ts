@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Log or process the webhook payload
     console.log('Received Zoho Webhook:', JSON.stringify(event, null, 2));
+    console.log('Testing log');
 
     // Ticket Thread Add
     if (eventType === "Ticket_Thread_Add") {
