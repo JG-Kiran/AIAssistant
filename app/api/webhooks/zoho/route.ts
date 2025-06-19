@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
         console.log('🎟️ New ticket created:', payload);
         // Map Zoho payload fields to tickets table schema
         const ticketData = {
-          ticket_id: payload.id || null,
-          ticket_reference_id: payload.ticketNumber || payload.id?.toString() || null,
+          ticket_id: payload.ticketNumber || null,
+          ticket_reference_id: payload.id ||  null,
           contact_name: payload.contact?.name || null,
           contact_id: payload.contact?.id || null,
           ticket_owner: payload.owner?.name || null,
