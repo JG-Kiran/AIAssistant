@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
           team_id: ticketPayload.teamId || null,
           // tags: 
           ticket_on_hold_time: ticketPayload.onholdTime || '0',
-          child_ticket_time: '0',
+          child_ticket_count: '0',
         };
 
         // Validate required fields
