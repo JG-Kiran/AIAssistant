@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     console.log('Testing log');
 
     // Ticket Thread Add
-    if (eventType === "Ticket_Thread_Add") {
+    if (eventType === 'Ticket_Thread_Add') {
       const threadPayload: ThreadPayload = payload;
       
       // Validate required fields
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (eventType === "Ticket_Add") {
+    if (eventType === 'Ticket_Add') {
       console.log('🎟️ New ticket created:', payload);
       // Map Zoho payload fields to tickets table schema
       const ticketData = {
@@ -161,12 +161,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (eventType === "Ticket_Update") {
+    if (eventType === 'Ticket_Update') {
       console.log('🔄 Ticket updated:', payload);
       // Add ticket update logic here if needed
     }
 
-    if (eventType === "Ticket_Deleted") {
+    if (eventType === 'Ticket_Deleted') {
       console.log('🔄 Ticket deleted:', payload);
       // Add ticket update logic here if needed
     }
