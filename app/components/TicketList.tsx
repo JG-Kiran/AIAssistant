@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: string) => void }) {
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState<'name' | 'reference'>('name');
+  const [modeFilter, setModeFilter] = useState<string>('all');
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -26,7 +27,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     if (node) observer.current.observe(node);
   }, [loading, hasMore]);
 
-  const fetchTickets = async (pageNumber: number, searchText: string, searchType: 'name' | 'reference') => {
+  const fetchTickets = async (pageNumber: number, searchText: string, searchType: 'name' | 'reference', modeFilter: string) => {
     try {
       setLoading(true);
       const from = pageNumber * ITEMS_PER_PAGE;
@@ -41,6 +42,10 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
       if (searchText.trim()) {
         const column = searchType === 'name' ? 'contact_name' : 'ticket_reference_id';
         query = query.ilike(column, `%${searchText}%`);  // case-insensitive search
+      }
+
+      if (modeFilter !== 'all') {
+        query = query.eq('mode', modeFilter);
       }
 
       const { data, error } = await query;
@@ -64,22 +69,29 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   useEffect(() => {
-    setPage(0); // reset paging when search changes
-    fetchTickets(0, searchText, searchType);
-  }, [searchText, searchType]);
+    setPage(0); // reset paging when search or filter changes
+    fetchTickets(0, searchText, searchType, modeFilter);
+  }, [searchText, searchType, modeFilter]);
   
   useEffect(() => {
-    if (page === 0 && searchText) return; // already handled by above
-    fetchTickets(page, searchText, searchType);
+    if (page === 0 && (searchText || modeFilter !== 'all')) return; // already handled by above
+    fetchTickets(page, searchText, searchType, modeFilter);
   }, [page]);
 
   const filteredTickets = tickets.filter(ticket => {
     const searchLower = searchText.toLowerCase();
+    let matchesSearch = false;
+    
     if (searchType === 'name') {
-      return ticket.contact_name?.toLowerCase().includes(searchLower);
+      matchesSearch = ticket.contact_name?.toLowerCase().includes(searchLower);
     } else {
-      return ticket.ticket_reference_id?.toLowerCase().includes(searchLower);
+      matchesSearch = ticket.ticket_reference_id?.toLowerCase().includes(searchLower);
     }
+    // If no search text, all tickets match
+    if (!searchText.trim()) {
+      matchesSearch = true;
+    }
+    return matchesSearch;
   });
 
   return (
@@ -110,6 +122,26 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             </div>
           </div>
         </div>
+        <div className="relative w-full">
+          <select
+            value={modeFilter}
+            onChange={(e) => setModeFilter(e.target.value)}
+            className="w-full p-2 pl-3 pr-10 appearance-none border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer hover:border-gray-400 transition-colors"
+          >
+            <option value="all">All Channels</option>
+            <option value="Facebook">Facebook</option>
+            <option value="Email">Email</option>
+            <option value="MyStorage">MyStorage</option>
+            <option value="ZaloOA">Zalo</option>
+            <option value="Phone">Phone</option>
+            <option value="Web">Web Chat</option>
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
       </div>
       <div className="overflow-y-auto flex-1">
         <ul>
@@ -129,6 +161,11 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                 <div className="flex-1">
                   <h3 className="font-medium">{ticket.contact_name}</h3>
                   <p className="text-sm text-gray-500">{ticket.ticket_reference_id}</p>
+                  {ticket.mode && (
+                    <p className="text-sm text-gray-500">
+                      {ticket.mode}
+                    </p>
+                  )}
                   {ticket.created_time && <p className="text-sm text-gray-500">{ticket.created_time}</p>}
                 </div>
               </div>

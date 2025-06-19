@@ -12,8 +12,16 @@ export interface ChatMessage {
   created_at?: string;
 }
 
+interface TicketDetails {
+  contact_name: string;
+  ticket_reference_id?: string;
+  mode?: string;
+}
+
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
   const [message, setMessage] = useState('');
+  const [threadlen, setThreadLength] = useState(0);
+  const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
     id: 0,
     type: 'customer',
@@ -21,6 +29,30 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     text: '',
     created_at: new Date().toISOString(),
   }]);
+
+  useEffect(() => {
+    const fetchTicketDetails = async () => {
+      if (!selectedTicketId) {
+        setTicketDetails(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('ticket_reference_id', selectedTicketId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching ticket details:', error);
+        return;
+      }
+
+      setTicketDetails(data);
+    };
+
+    fetchTicketDetails();
+  }, [selectedTicketId]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -49,6 +81,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       }));
 
       setChatMessages(formatted);
+      setThreadLength(formatted.length);
     };
     
     fetchMessages();
@@ -82,10 +115,31 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     });
   };
 
+  const getChannelDisplay = () => {
+    if (!ticketDetails) return '';
+    
+    // Try to determine channel from available fields
+    const channel = ticketDetails.mode;
+    
+    if (channel) {
+      return ` • ${channel.charAt(0).toUpperCase() + channel.slice(1).toLowerCase()}`;
+    } else {
+      ''
+    }
+    
+    // Default to showing just the customer name if no channel can be determined
+    return '';
+  };
+
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
       <div className="flex-[2] flex flex-col p-4">
-        <h2 className="text-xl font-semibold mb-4">Customer</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {selectedTicketId && ticketDetails 
+            ? `${ticketDetails.contact_name}${getChannelDisplay() || ' • Chat'}`
+            : 'Customer'
+          }
+        </h2>
 
         <div className="flex-1 overflow-y-auto mb-4">
           {selectedTicketId === null ? (
