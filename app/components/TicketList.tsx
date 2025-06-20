@@ -94,6 +94,19 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     return matchesSearch;
   });
 
+  const formatMessageTime = (timestamp: string | undefined) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   return (
     <section className="w-1/4 bg-gray-100 p-4 border-r border-gray-300 flex flex-col h-full">
       <h2 className="text-xl font-semibold mb-4">Ticket List</h2>
@@ -166,7 +179,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                       {ticket.mode}
                     </p>
                   )}
-                  {ticket.created_time && <p className="text-sm text-gray-500">{new Date(ticket.created_time).toISOString()}</p>}
+                  {ticket.created_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.created_time)}</p>}
                 </div>
               </div>
             </li>
