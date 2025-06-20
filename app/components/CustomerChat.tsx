@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
+import { sendZohoReply } from '../lib/send-reply';
 
 export interface ChatMessage {
   id: number;
@@ -87,18 +88,30 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     fetchMessages();
   }, [selectedTicketId]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          type: 'agent',
-          text: message,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      setMessage('');
+  const handleSendMessage = async () => {
+    if (message.trim() && selectedTicketId) {
+      try {
+        // Use the ticket's channel if available, otherwise default to 'Email'
+        const channel = ticketDetails?.mode || '';
+        const result = await sendZohoReply(selectedTicketId, message, channel);
+        if (!result.success) {
+          alert('Failed to send reply to Zoho Desk: ' + (result.error || 'Unknown error'));
+          return;
+        }
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            id: prev.length + 1,
+            type: 'agent',
+            text: message,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        setMessage('');
+      } catch (error) {
+        alert('Failed to send reply to Zoho Desk.');
+        console.error(error);
+      }
     }
   };
 
