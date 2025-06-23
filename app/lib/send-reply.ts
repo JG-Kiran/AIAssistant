@@ -1,6 +1,14 @@
 import { TicketDetails } from '../components/CustomerChat';
 
-export async function refreshZohoAccessToken(): Promise<string> {
+let cachedAccessToken: string | null = null;
+let accessTokenExpiry: number | null = null; // Unix timestamp in ms
+
+async function getZohoAccessToken() {
+  const now = Date.now();
+  if (cachedAccessToken && accessTokenExpiry && now < accessTokenExpiry) {
+    return cachedAccessToken;
+  }
+
   const refreshToken = process.env.NEXT_PUBLIC_ZOHO_REFRESH_TOKEN;
   const clientId = process.env.NEXT_PUBLIC_ZOHO_CLIENT_ID;
   const clientSecret = process.env.NEXT_PUBLIC_ZOHO_CLIENT_SECRET;
@@ -17,7 +25,7 @@ export async function refreshZohoAccessToken(): Promise<string> {
   params.append('client_secret', clientSecret!);
   params.append('grant_type', 'refresh_token');
 
-  const response = await fetch('https://accounts.zoho.com/oauth/v2/token', {
+  const tokenResponse = await fetch('https://accounts.zoho.com/oauth/v2/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
@@ -25,14 +33,16 @@ export async function refreshZohoAccessToken(): Promise<string> {
     body: params.toString()
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Raw error response from Zoho Auth:", error);
+  if (!tokenResponse.ok) {
+    const error = await tokenResponse.text();
     throw new Error(`Failed to refresh Zoho access token: ${error}`);
   }
 
-  const data = await response.json();
-  return data.access_token;
+  const tokenData = await tokenResponse.json();
+  cachedAccessToken = tokenData.access_token;
+  // Set expiry to now + expires_in (in seconds) minus a buffer (e.g., 1 minute)
+  accessTokenExpiry = now + (tokenData.expires_in ? (tokenData.expires_in - 60) * 1000 : 3500 * 1000);
+  return cachedAccessToken;
 }
 
 // Define a dictionary to map ticket modes to channels
@@ -54,7 +64,7 @@ export async function sendZohoReply(ticketDetails: TicketDetails, content: strin
       // Map the mode to the channel using the dictionary
       const channel = modeToChannelMap[ticketDetails.mode || ''] || 'EMAIL';
       // Always refresh the access token before sending a reply
-      const accessToken = await refreshZohoAccessToken();
+      const accessToken = await getZohoAccessToken();
       
       const url = `https://desk.zoho.com/api/v1/tickets/${ticketDetails.ticket_reference_id}/sendReply`;
       
