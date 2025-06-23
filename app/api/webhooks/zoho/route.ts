@@ -48,65 +48,77 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          // Prepare thread data for Supabase (only fields in threads table schema)
-          const threadData = {
-            id: threadPayload.id,
-            ticket_reference_id: threadPayload.ticketId,
-            author_id: threadPayload.author?.id || null,
-            author_name: threadPayload.author?.name || null,
-            author_type: threadPayload.author?.type || null,
-            message: threadPayload.content,
-            created_time: threadPayload.createdTime || new Date().toISOString(),
-            channel: threadPayload.channel || null,
-            direction: threadPayload.direction,
-          };
-
-          // Insert the thread into Supabase
-          const { data, error } = await supabase
+          // Check if the thread already exists
+          const { data: existingThread, error: checkError } = await supabase
             .from('threads')
-            .insert([threadData])
-            .select();
-
-          if (error) {
-            console.error('❌ Error inserting thread into Supabase:', error);
-            return new Response('Database error', { status: 500 });
+            .select('id')
+            .eq('id', threadPayload.id)
+            .single();
+          if (checkError && checkError.code !== 'PGRST116') { // PGRST116: No rows found
+            console.error('❌ Error checking for existing thread:', checkError);
           }
+          if (existingThread) {
+            console.log(`Thread with id ${threadPayload.id} already exists. Skipping insert.`);
+          } else {
+            // Prepare thread data for Supabase (only fields in threads table schema)
+            const threadData = {
+              id: threadPayload.id,
+              ticket_reference_id: threadPayload.ticketId,
+              author_id: threadPayload.author?.id || null,
+              author_name: threadPayload.author?.name || null,
+              author_type: threadPayload.author?.type || null,
+              message: threadPayload.content,
+              created_time: threadPayload.createdTime || new Date().toISOString(),
+              channel: threadPayload.channel || null,
+              direction: threadPayload.direction,
+            };
 
-          // Update the ticket with any relevant fields present in the thread payload
-          try {
-            const ticketUpdate: any = {};
-            // Set modified_time, modified_by, modified_by_id
-            ticketUpdate.modified_time = threadPayload.createdTime ? threadPayload.createdTime : new Date().toISOString();
-            if ('author' in threadPayload && threadPayload.author && typeof threadPayload.author === 'object') {
-              ticketUpdate.modified_by = threadPayload.author.name || null;
-              ticketUpdate.modified_by_id = threadPayload.author.id || null;
-            }
-            // Example: update status, priority, assignee, etc. if present in threadPayload
-            if ('status' in threadPayload) ticketUpdate.status = threadPayload.status;
-            if ('priority' in threadPayload) ticketUpdate.priority = threadPayload.priority;
-            if ('assignee' in threadPayload && typeof threadPayload.assignee === 'object' && threadPayload.assignee !== null) {
-              const assignee = threadPayload.assignee as { firstName?: string; lastName?: string; id?: string };
-              ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
-              ticketUpdate.ticket_owner_id = ('assigneeId' in threadPayload) ? threadPayload.assigneeId : assignee.id;
-            } else if ('assigneeId' in threadPayload) {
-              ticketUpdate.ticket_owner_id = threadPayload.assigneeId;
+            // Insert the thread into Supabase
+            const { data, error } = await supabase
+              .from('threads')
+              .insert([threadData])
+              .select();
+
+            if (error) {
+              console.error('❌ Error inserting thread into Supabase:', error);
+              return new Response('Database error', { status: 500 });
             }
 
-            const { error: updateError } = await supabase
-              .from('tickets')
-              .update(ticketUpdate)
-              .eq('ticket_reference_id', threadPayload.ticketId);
+            // Update the ticket with any relevant fields present in the thread payload
+            try {
+              const ticketUpdate: any = {};
+              // Set modified_time, modified_by, modified_by_id
+              ticketUpdate.modified_time = threadPayload.createdTime ? threadPayload.createdTime : new Date().toISOString();
+              if ('author' in threadPayload && threadPayload.author && typeof threadPayload.author === 'object') {
+                ticketUpdate.modified_by = threadPayload.author.name || null;
+                ticketUpdate.modified_by_id = threadPayload.author.id || null;
+              }
+              // Example: update status, priority, assignee, etc. if present in threadPayload
+              if ('status' in threadPayload) ticketUpdate.status = threadPayload.status;
+              if ('priority' in threadPayload) ticketUpdate.priority = threadPayload.priority;
+              if ('assignee' in threadPayload && typeof threadPayload.assignee === 'object' && threadPayload.assignee !== null) {
+                const assignee = threadPayload.assignee as { firstName?: string; lastName?: string; id?: string };
+                ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
+                ticketUpdate.ticket_owner_id = ('assigneeId' in threadPayload) ? threadPayload.assigneeId : assignee.id;
+              } else if ('assigneeId' in threadPayload) {
+                ticketUpdate.ticket_owner_id = threadPayload.assigneeId;
+              }
 
-            if (updateError) {
-              console.warn('⚠️ Warning: Could not update ticket fields:', updateError);
-              // Don't fail the webhook for this, just log the warning
-            } else {
-              console.log('✅ Updated ticket fields for:', threadPayload.ticketId);
+              const { error: updateError } = await supabase
+                .from('tickets')
+                .update(ticketUpdate)
+                .eq('ticket_reference_id', threadPayload.ticketId);
+
+              if (updateError) {
+                console.warn('⚠️ Warning: Could not update ticket fields:', updateError);
+                // Don't fail the webhook for this, just log the warning
+              } else {
+                console.log('✅ Updated ticket fields for:', threadPayload.ticketId);
+              }
+            } catch (updateError) {
+              console.warn('⚠️ Warning: Error updating ticket fields:', updateError);
             }
-          } catch (updateError) {
-            console.warn('⚠️ Warning: Error updating ticket fields:', updateError);
           }
-          
         } catch (dbError) {
           console.error('❌ Database operation failed:', dbError);
           return new Response('Database operation failed', { status: 500 });
@@ -183,25 +195,38 @@ export async function POST(request: NextRequest) {
           // If there is a firstThread, insert it into the threads table
           if (payload.firstThread) {
             const thread = payload.firstThread;
-            const threadData = {
-              id: thread.id,
-              ticket_reference_id: thread.ticketId,
-              author_id: thread.author?.id || null,
-              author_name: thread.author?.name || null,
-              author_type: thread.author?.type || null,
-              message: thread.content,
-              created_time: thread.createdTime || new Date().toISOString(),
-              channel: thread.channel || null,
-              direction: thread.direction,
-            };
-            const { error: threadError } = await supabase
+            // Check if the thread already exists
+            const { data: existingThread, error: checkError } = await supabase
               .from('threads')
-              .insert([threadData]);
-            if (threadError) {
-              console.error('❌ Error inserting first thread into Supabase:', threadError);
-              // Don't fail the webhook for this, just log the error
+              .select('id')
+              .eq('id', thread.id)
+              .single();
+            if (checkError && checkError.code !== 'PGRST116') { // PGRST116: No rows found
+              console.error('❌ Error checking for existing thread:', checkError);
+            }
+            if (existingThread) {
+              console.log(`Thread with id ${thread.id} already exists. Skipping insert.`);
             } else {
-              console.log('✅ First thread inserted for ticket:', thread.ticketId);
+              const threadData = {
+                id: thread.id,
+                ticket_reference_id: thread.ticketId,
+                author_id: thread.author?.id || null,
+                author_name: thread.author?.name || null,
+                author_type: thread.author?.type || null,
+                message: thread.content,
+                created_time: thread.createdTime || new Date().toISOString(),
+                channel: thread.channel || null,
+                direction: thread.direction,
+              };
+              const { error: threadError } = await supabase
+                .from('threads')
+                .insert([threadData]);
+              if (threadError) {
+                console.error('❌ Error inserting first thread into Supabase:', threadError);
+                // Don't fail the webhook for this, just log the error
+              } else {
+                console.log('✅ First thread inserted for ticket:', thread.ticketId);
+              }
             }
           }
         } catch (dbError) {
