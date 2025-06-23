@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
+        'orgId': '857073000032030154',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ channel, content })
@@ -33,4 +34,4 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return new Response(JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }), { status: 500 });
   }
-} 
+}
