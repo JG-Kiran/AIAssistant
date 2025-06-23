@@ -1,16 +1,17 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
     const { ticketId, content, channel } = await request.json();
     if (!ticketId || !content || !channel) {
-      return new Response(JSON.stringify({ success: false, error: 'Missing required fields' }), { status: 400 });
+        return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
     // Use access token from NEXT_PUBLIC env variable
     const accessToken = process.env.ZOHO_DESK_AUTH_TOKEN;
     if (!accessToken) {
-      return new Response(JSON.stringify({ success: false, error: 'Access token not set in environment' }), { status: 500 });
+        console.error('ZOHO_DESK_AUTH_TOKEN not set in environment');
+        return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
     }
 
     // Send reply to Zoho Desk
@@ -25,8 +26,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!zohoResponse.ok) {
-      const errorData = await zohoResponse.json();
-      return new Response(JSON.stringify({ success: false, error: errorData.message || 'Failed to send reply to Zoho Desk' }), { status: 500 });
+        const errorData = await zohoResponse.json();
+        console.error('Zoho API Error:', errorData); // Log the full error on the server
+        return NextResponse.json({ success: false, error: errorData.message || 'Failed to send reply to Zoho Desk' }, { status: zohoResponse.status });
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
