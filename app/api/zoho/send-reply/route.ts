@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use access token from NEXT_PUBLIC env variable
-    const accessToken = process.env.NEXT_PUBLIC_ZOHO_DESK_AUTH_TOKEN;
+    const accessToken = process.env.ZOHO_DESK_AUTH_TOKEN;
     if (!accessToken) {
       return new Response(JSON.stringify({ success: false, error: 'Access token not set in environment' }), { status: 500 });
     }
@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
-        'orgId': '857073000032030154',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ channel, content })
