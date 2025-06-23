@@ -17,6 +17,7 @@ export interface TicketDetails {
   contact_name: string;
   ticket_reference_id?: string;
   mode?: string;
+  email?: string;
 }
 
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
