@@ -179,6 +179,31 @@ export async function POST(request: NextRequest) {
             return new Response('Database error', { status: 500 });
           }
           console.log('✅ Ticket inserted:', data);
+
+          // If there is a firstThread, insert it into the threads table
+          if (payload.firstThread) {
+            const thread = payload.firstThread;
+            const threadData = {
+              id: thread.id,
+              ticket_reference_id: thread.ticketId,
+              author_id: thread.author?.id || null,
+              author_name: thread.author?.name || null,
+              author_type: thread.author?.type || null,
+              message: thread.content,
+              created_time: thread.createdTime || new Date().toISOString(),
+              channel: thread.channel || null,
+              direction: thread.direction,
+            };
+            const { error: threadError } = await supabase
+              .from('threads')
+              .insert([threadData]);
+            if (threadError) {
+              console.error('❌ Error inserting first thread into Supabase:', threadError);
+              // Don't fail the webhook for this, just log the error
+            } else {
+              console.log('✅ First thread inserted for ticket:', thread.ticketId);
+            }
+          }
         } catch (dbError) {
           console.error('❌ Database operation failed:', dbError);
           return new Response('Database operation failed', { status: 500 });
