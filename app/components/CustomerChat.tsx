@@ -90,9 +90,22 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   }, [selectedTicketId]);
 
   const handleSendMessage = async () => {
-    if (message.trim() && selectedTicketId && ticketDetails) {
+    if (message.trim() && selectedTicketId) {
       try {
-        const result = await sendZohoReply(ticketDetails, message);
+        // Use the ticket's channel if available, otherwise default to 'Email'
+        const channel = ticketDetails?.mode || 'Email';
+        const response = await fetch('/api/zoho/send-reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticketId: selectedTicketId,
+            content: message,
+            channel,
+          }),
+        });
+        const result = await response.json();
         if (!result.success) {
           alert('Failed to send reply to Zoho Desk: ' + (result.error || 'Unknown error'));
           return;
