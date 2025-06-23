@@ -13,7 +13,7 @@ export interface ChatMessage {
   created_at?: string;
 }
 
-interface TicketDetails {
+export interface TicketDetails {
   contact_name: string;
   ticket_reference_id?: string;
   mode?: string;
@@ -89,11 +89,9 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   }, [selectedTicketId]);
 
   const handleSendMessage = async () => {
-    if (message.trim() && selectedTicketId) {
+    if (message.trim() && selectedTicketId && ticketDetails) {
       try {
-        // Use the ticket's channel if available, otherwise default to 'Email'
-        const channel = ticketDetails?.mode || '';
-        const result = await sendZohoReply(selectedTicketId, message, channel);
+        const result = await sendZohoReply(ticketDetails, message);
         if (!result.success) {
           alert('Failed to send reply to Zoho Desk: ' + (result.error || 'Unknown error'));
           return;

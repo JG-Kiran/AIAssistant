@@ -1,3 +1,5 @@
+import { TicketDetails } from '../components/CustomerChat';
+
 export async function refreshZohoAccessToken(): Promise<string> {
   const refreshToken = process.env.NEXT_PUBLIC_ZOHO_REFRESH_TOKEN;
   const clientId = process.env.NEXT_PUBLIC_ZOHO_CLIENT_ID;
@@ -33,24 +35,56 @@ export async function refreshZohoAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-export async function sendZohoReply(ticketId: string, content: string, channel: string): 
+// Define a dictionary to map ticket modes to channels
+const modeToChannelMap: { [key: string]: string } = {
+  // Example entries, you can fill in the actual mappings
+  'Email': 'EMAIL',
+  'Facebook': 'FACEBOOK_DM',
+  'Instagram': 'INSTAGRAM_DM',
+  'Web': 'EMAIL',
+  'MyStorage': 'MYSTORAGEEN',
+  'ZaloOA': 'ZALO_OA_4'
+  // Add more mappings as needed
+};
+
+export async function sendZohoReply(ticketDetails: TicketDetails, content: string): 
     Promise<{ success: boolean; error?: string }> 
     {
     try {
+      // Map the mode to the channel using the dictionary
+      const channel = modeToChannelMap[ticketDetails.mode || ''] || 'EMAIL';
       // Always refresh the access token before sending a reply
       const accessToken = await refreshZohoAccessToken();
       
-      const url = `https://desk.zoho.com/api/v1/tickets/${ticketId}/sendReply`;
+      const url = `https://desk.zoho.com/api/v1/tickets/${ticketDetails.ticket_reference_id}/sendReply`;
+      
+      // Prepare the body based on the channel
+      let body;
+      if (channel === 'EMAIL') {
+        body = JSON.stringify({
+          ticketStatus: "Closed",
+          channel: "EMAIL",
+          attachmentIds: "null", // Example, replace with actual data
+          to: ticketDetails.email || "", // Use the email from ticketDetails
+          fromEmailAddress: "support@mystorage.zohodesk.com", // Example, replace with actual data
+          contentType: "plainText",
+          content,
+          isForward: "true"
+        });
+      } else {
+        body = JSON.stringify({
+          channel,
+          content
+        });
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Authorization': `Zoho-oauthtoken ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          channel,
-          content
-        })
+        body
       });
   
       if (!response.ok) {
@@ -75,7 +109,7 @@ export async function sendZohoReply(ticketId: string, content: string, channel: 
       // If you do need to read it, use a similar try/catch block as the error handling.
       await response.text(); 
 
-      console.log(`Successfully sent reply for ticket ${ticketId}`);
+      console.log(`Successfully sent reply for ticket ${ticketDetails.ticket_reference_id}`);
       return { success: true };
   
     } catch (error) {
