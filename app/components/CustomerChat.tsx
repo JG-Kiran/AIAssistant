@@ -89,11 +89,23 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     fetchMessages();
   }, [selectedTicketId]);
 
+  // Define a dictionary to map ticket modes to channels
+  const modeToChannelMap: { [key: string]: string } = {
+    // Example entries, you can fill in the actual mappings
+    'Email': 'EMAIL',
+    'Facebook': 'FACEBOOK_DM',
+    'Instagram': 'INSTAGRAM_DM',
+    'Web': 'EMAIL',
+    'MyStorage': 'MYSTORAGEEN',
+    'ZaloOA': 'ZALO_OA_4'
+    // Add more mappings as needed
+  };
+
   const handleSendMessage = async () => {
     if (message.trim() && selectedTicketId) {
       try {
         // Use the ticket's channel if available, otherwise default to 'Email'
-        const channel = ticketDetails?.mode || 'Email';
+        const channel = modeToChannelMap[ticketDetails?.mode || ''] || 'EMAIL';
         const response = await fetch('/api/zoho/send-reply', {
           method: 'POST',
           headers: {
