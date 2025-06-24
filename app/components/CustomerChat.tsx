@@ -111,11 +111,9 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       }
 
       const formatted: ChatMessage[] = data.map((msg: any) => {
-        console.log('Parsing message:', msg.message);
         const plainText = convert(msg.message, {
           wordwrap: 130
         });
-        console.log('Plain text message:', plainText);
         return {
           id: msg.id,
           type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer') as 'agent' | 'customer',
