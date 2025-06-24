@@ -81,7 +81,31 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           setChatMessages((currentMessages) => [...currentMessages, newMessage]);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        // This callback lets you know the status of the subscription.
+        
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ WebSocket connection successfully established!');
+            // You are now connected and listening for changes.
+            // You could perform an action here, like fetching initial data
+            // to ensure a consistent state.
+            break;
+  
+          case 'TIMED_OUT':
+            console.error('Connection timed out. Retrying...');
+            break;
+  
+          case 'CHANNEL_ERROR':
+            console.error('A channel error occurred.', err);
+            break;
+            
+          case 'CLOSED':
+            console.log('WebSocket connection closed.');
+            break;
+        }
+      });
+      
       console.log(`Realtime chat setup for ticket ${selectedTicketId}`)
 
     // Remove channel when component unmounts to prevent memory leaks
