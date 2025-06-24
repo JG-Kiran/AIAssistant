@@ -56,33 +56,41 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     fetchTicketDetails();
   }, [selectedTicketId]);
 
-  // The useEffect hook manages the real-time subscription
+  // Initialize realtime subscription for chats
+  useEffect(() => {
+    // Create the channel only once when the component mounts.
+    const channel = supabase.channel('customer-chat');
+  
+    // When the component unmounts, remove the single channel.
+    return () => {
+      console.log('Cleaning up the main chat channel');
+      supabase.removeChannel(channel);
+    }
+  }, []);
+
+  // Manage subscription when ticket id changes
   useEffect(() => {
     // Add this guard clause to prevent running with a null/undefined ID
     if (!selectedTicketId) {
-      return; // Stop here if there's no selected ticket
+      return;
     }
     
-    //Define the channel for selected ticket
-    const channel = supabase.channel(`realtime-chat-${selectedTicketId}`);
-    console.log(`Startin realtime chat for ticket ${selectedTicketId}`);
+    console.log(`Setting up subscription for ticket ${selectedTicketId}`);
 
-    // Set up realtime subscription
-    const subscription = channel
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT', // Only listen for new messages
-          schema: 'public',
-          table: 'threads',
-          filter: `ticket_reference_id=eq.${selectedTicketId}`,
-        },
-        (payload) => {
-          // This function runs every time a new message for this ticket is inserted
-          console.log('New message received!', payload);
-
-          // Only add the message if it matches the current ticket
-          const newMsgRaw = payload.new as any;
+    const subscription = supabase
+    .channel('customer-chat') // Re-use the SAME channel
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'threads',
+        filter: `ticket_id=eq.${selectedTicketId}`,
+      },
+      (payload) => {
+        console.log('New message received!', payload);
+        // Add logic to update your state here
+        const newMsgRaw = payload.new as any;
           if (newMsgRaw.ticket_reference_id === selectedTicketId) {
             const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
             const newMessage: ChatMessage = {
@@ -94,36 +102,34 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             };
           setChatMessages((currentMessages) => [...currentMessages, newMessage]);
           }
-        }
-      )
-      .subscribe((status, err) => {
-        // This callback lets you know the status of the subscription.
-        
-        switch (status) {
-          case 'SUBSCRIBED':
-            console.log('✅ WebSocket connection for threads successfully established!');
-            break;
-  
-          case 'TIMED_OUT':
-            console.error('Connection timed out. Retrying...');
-            break;
-  
-          case 'CHANNEL_ERROR':
-            console.error('A channel error occurred.', err);
-            break;
-            
-          case 'CLOSED':
-            console.log('WebSocket connection closed.');
-            break;
-        }
-      });
-    // Remove channel when component unmounts to prevent memory leaks
-    return () => {
-      console.log(`Closing channel`);
-      subscription.unsubscribe();
-      supabase.removeChannel(channel);
-    };
+      }
+    )
+    .subscribe((status, err) => {
+      switch (status) {
+        case 'SUBSCRIBED':
+          console.log('✅ WebSocket connection for threads successfully established!');
+          break;
 
+        case 'TIMED_OUT':
+          console.error('Connection timed out. Retrying...');
+          break;
+
+        case 'CHANNEL_ERROR':
+          console.error('A channel error occurred.', err);
+          break;
+          
+        case 'CLOSED':
+          console.log('WebSocket connection closed.');
+          break;
+      }
+    });
+
+    // The cleanup for THIS effect is to unsubscribe from the events,
+    // but it leaves the main channel open.
+    return () => {
+      console.log(`Tearing down subscription for ticket ${selectedTicketId}`);
+      subscription.unsubscribe();
+    }
   }, [selectedTicketId]);
 
   useEffect(() => {
