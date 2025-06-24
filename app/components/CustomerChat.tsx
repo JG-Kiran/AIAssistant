@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { convert } from 'html-to-text';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface ChatMessage {
   id: number;
@@ -70,66 +71,73 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
   // Manage subscription when ticket id changes
   useEffect(() => {
-    // Add this guard clause to prevent running with a null/undefined ID
-    if (!selectedTicketId) {
-      return;
-    }
+    let channel: RealtimeChannel;
+
+    const setupSubscription = async () => {
+      // Add this guard clause to prevent running with a null/undefined ID
+      if (!selectedTicketId) {
+        return;
+      }
+
+      channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
     
-    console.log(`Setting up subscription for ticket ${selectedTicketId}`);
+      channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'threads',
+          filter: `ticket_id=eq.${selectedTicketId}`,
+        },
+        (payload) => {
+          console.log('New message received!', payload);
+          // Add logic to update your state here
+          const newMsgRaw = payload.new as any;
+            if (newMsgRaw.ticket_reference_id === selectedTicketId) {
+              const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
+              const newMessage: ChatMessage = {
+                id: newMsgRaw.id,
+                type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
+                name: newMsgRaw.author_name,
+                text: plainText,
+                created_at: newMsgRaw.created_time || new Date().toISOString(),
+              };
+            setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+            }
+        }
+      )
+      .subscribe((status, err) => {
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ WebSocket connection for threads successfully established!');
+            break;
 
-    const subscription = supabase
-    .channel('customer-chat') // Re-use the SAME channel
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'threads',
-        filter: `ticket_id=eq.${selectedTicketId}`,
-      },
-      (payload) => {
-        console.log('New message received!', payload);
-        // Add logic to update your state here
-        const newMsgRaw = payload.new as any;
-          if (newMsgRaw.ticket_reference_id === selectedTicketId) {
-            const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
-            const newMessage: ChatMessage = {
-              id: newMsgRaw.id,
-              type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
-              name: newMsgRaw.author_name,
-              text: plainText,
-              created_at: newMsgRaw.created_time || new Date().toISOString(),
-            };
-          setChatMessages((currentMessages) => [...currentMessages, newMessage]);
-          }
-      }
-    )
-    .subscribe((status, err) => {
-      switch (status) {
-        case 'SUBSCRIBED':
-          console.log('✅ WebSocket connection for threads successfully established!');
-          break;
+          case 'TIMED_OUT':
+            console.error('Connection timed out. Retrying...');
+            break;
 
-        case 'TIMED_OUT':
-          console.error('Connection timed out. Retrying...');
-          break;
+          case 'CHANNEL_ERROR':
+            console.error('A channel error occurred.', err);
+            break;
+            
+          case 'CLOSED':
+            console.log('WebSocket connection closed.');
+            break;
+        }
+    })};
 
-        case 'CHANNEL_ERROR':
-          console.error('A channel error occurred.', err);
-          break;
-          
-        case 'CLOSED':
-          console.log('WebSocket connection closed.');
-          break;
-      }
-    });
+    setupSubscription();
 
     // The cleanup for THIS effect is to unsubscribe from the events,
     // but it leaves the main channel open.
     return () => {
-      console.log(`Tearing down subscription for ticket ${selectedTicketId}`);
-      subscription.unsubscribe();
-    }
+      if (channel) {
+        console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
+        // Removing the channel ensures a clean state for the next subscription.
+        supabase.removeChannel(channel);
+      }
+    };
   }, [selectedTicketId]);
 
   useEffect(() => {
