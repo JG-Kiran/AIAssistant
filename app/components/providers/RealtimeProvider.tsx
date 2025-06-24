@@ -61,7 +61,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       console.log('[RealtimeProvider] Unmounting, removing all channels.');
       channels.forEach(channel => supabase.removeChannel(channel));
     };
-  }, [channels]);
+  }, []);
 
   const value = { subscribeToTicket, unsubscribeFromTicket };
 
