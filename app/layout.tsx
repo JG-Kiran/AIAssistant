@@ -1,4 +1,5 @@
-import './globals.css'
+import './globals.css';
+import { RealtimeProvider } from './components/providers/RealtimeProvider';
 
 export const metadata = {
   title: 'AI Assitant',
@@ -12,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <RealtimeProvider>
+          {children}
+        </RealtimeProvider>
+      </body>
     </html>
   )
 }
