@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 
@@ -21,7 +21,6 @@ export interface TicketDetails {
 
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
   const [message, setMessage] = useState('');
-  const [threadlen, setThreadLength] = useState(0);
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
     id: 0,
@@ -30,7 +29,9 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     text: '',
     created_at: new Date().toISOString(),
   }]);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  // 
   useEffect(() => {
     const fetchTicketDetails = async () => {
       if (!selectedTicketId) {
@@ -82,11 +83,22 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       }));
 
       setChatMessages(formatted);
-      setThreadLength(formatted.length);
     };
     
     fetchMessages();
   }, [selectedTicketId]);
+
+  // Clear message box when chat opened
+  useEffect(() => {
+    setMessage('');
+  }, [selectedTicketId]);
+
+  // Autoscroll to bottom when chat opened
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
 
   // Define a dictionary to map ticket modes to channels
   const modeToChannelMap: { [key: string]: string } = {
@@ -181,7 +193,8 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           {selectedTicketId === null ? (
             <p className="text-gray-500">Select a ticket to view the conversation.</p>
           ) : (
-            chatMessages.map((msg) => (
+            <>
+            {chatMessages.map((msg) => (
               <div key={msg.id} className={`flex mb-4 ${msg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
                 {msg.type === 'customer' && (
                   <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
@@ -211,7 +224,9 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
                   </div>
                 )}
               </div>
-            ))
+            ))}
+            <div ref={chatEndRef} />
+            </>
           )}
         </div>
         {selectedTicketId !== null && (

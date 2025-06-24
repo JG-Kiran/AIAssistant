@@ -37,7 +37,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         .from('tickets')
         .select('*', { count: 'exact' })
         .range(from, to)
-        .order('created_time', { ascending: false });
+        .order('modified_time', { ascending: false });
 
       if (searchText.trim()) {
         const column = searchType === 'name' ? 'contact_name' : 'ticket_reference_id';
@@ -179,7 +179,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                       {ticket.mode}
                     </p>
                   )}
-                  {ticket.created_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.created_time)}</p>}
+                  {ticket.modified_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.created_time)}</p>}
                 </div>
               </div>
             </li>

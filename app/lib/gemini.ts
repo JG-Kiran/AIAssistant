@@ -14,8 +14,9 @@ export async function generateAIResponse(chatHistory: { type: string; text: stri
       .map(msg => `${msg.type === 'agent' ? 'Agent' : 'Customer'}: ${msg.text}`)
       .join('\n');
 
+      // ${standardTrainingPrompt}
     const prompt = 
-`${standardTrainingPrompt}
+`You are a helpful sales agent.
 
 Analyze the following customer service insights:
 ${customerServiceGuidelines}
