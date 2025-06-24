@@ -70,15 +70,24 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           event: 'INSERT', // Only listen for new messages
           schema: 'public',
           table: 'threads',
-          filter: `ticket_reference_id=eq.${selectedTicketId}`,
         },
         (payload) => {
           // This function runs every time a new message for this ticket is inserted
           console.log('New message received!', payload);
 
-          // Add the new message to our component's state
-          const newMessage = payload.new as ChatMessage;
-          setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+          // Only add the message if it matches the current ticket
+          // const newMsgRaw = payload.new as ChatMessage;
+          // if (newMsgRaw.ticket_reference_id === selectedTicketId) {
+          //   const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
+          //   const newMessage: ChatMessage = {
+          //     id: newMsgRaw.id,
+          //     type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
+          //     name: newMsgRaw.author_name,
+          //     text: plainText,
+          //     created_at: newMsgRaw.created_time || new Date().toISOString(),
+          //   };
+          //   setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+          // }
         }
       )
       .subscribe((status, err) => {
