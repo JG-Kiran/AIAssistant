@@ -60,6 +60,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   useEffect(() => {
     //Define the channel for selected ticket
     const channel = supabase.channel(`realtime-chat-${selectedTicketId}`);
+    console.log(`Startin realtime chat for ticket ${selectedTicketId}`);
 
     // Set up realtime subscription
     const subscription = channel
@@ -81,9 +82,11 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         }
       )
       .subscribe();
+      console.log(`Realtime chat setup for ticket ${selectedTicketId}`)
 
     // Remove channel when component unmounts to prevent memory leaks
     return () => {
+      console.log(`Closing channel`);
       supabase.removeChannel(channel);
     };
 
