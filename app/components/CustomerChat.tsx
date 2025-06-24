@@ -82,18 +82,18 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           console.log('New message received!', payload);
 
           // Only add the message if it matches the current ticket
-          // const newMsgRaw = payload.new as ChatMessage;
-          // if (newMsgRaw.ticket_reference_id === selectedTicketId) {
-          //   const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
-          //   const newMessage: ChatMessage = {
-          //     id: newMsgRaw.id,
-          //     type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
-          //     name: newMsgRaw.author_name,
-          //     text: plainText,
-          //     created_at: newMsgRaw.created_time || new Date().toISOString(),
-          //   };
-          //   setChatMessages((currentMessages) => [...currentMessages, newMessage]);
-          // }
+          const newMsgRaw = payload.new as any;
+          if (newMsgRaw.ticket_reference_id === selectedTicketId) {
+            const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
+            const newMessage: ChatMessage = {
+              id: newMsgRaw.id,
+              type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
+              name: newMsgRaw.author_name,
+              text: plainText,
+              created_at: newMsgRaw.created_time || new Date().toISOString(),
+            };
+          setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+          }
         }
       )
       .subscribe((status, err) => {
@@ -120,6 +120,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     // Remove channel when component unmounts to prevent memory leaks
     return () => {
       console.log(`Closing channel`);
+      subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
 
