@@ -78,6 +78,62 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     fetchTickets(page, searchText, searchType, modeFilter);
   }, [page]);
 
+  // The useEffect hook manages the real-time subscription
+  useEffect(() => {
+    //Define the channel for selected ticket
+    const channel = supabase.channel(`realtime-chat-tickets`);
+    console.log(`Startin realtime chat for ticket list`);
+
+    // Set up realtime subscription
+    const subscription = channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT', // Only listen for new messages
+          schema: 'public',
+          table: 'tickets',
+        },
+        (payload) => {
+          // This function runs every time a new message for this ticket is inserted
+          console.log('New message received!', payload);
+
+          // Add the new message to our component's state
+          // const newTicket = payload.new;
+          // setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+        }
+      )
+      .subscribe((status, err) => {
+        // This callback lets you know the status of the subscription.
+        
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ WebSocket connection successfully established!');
+            break;
+  
+          case 'TIMED_OUT':
+            console.error('Connection timed out. Retrying...');
+            break;
+  
+          case 'CHANNEL_ERROR':
+            console.error('A channel error occurred.', err);
+            break;
+            
+          case 'CLOSED':
+            console.log('WebSocket connection closed.');
+            break;
+        }
+      });
+
+      console.log(`Realtime chat setup for ticket list`)
+
+    // Remove channel when component unmounts to prevent memory leaks
+    return () => {
+      console.log(`Closing channel`);
+      supabase.removeChannel(channel);
+    };
+
+  }, []);
+
   const filteredTickets = tickets.filter(ticket => {
     const searchLower = searchText.toLowerCase();
     let matchesSearch = false;
