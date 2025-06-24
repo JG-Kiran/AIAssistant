@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
-import DOMPurify from 'dompurify';
 import { convert } from 'html-to-text';
 
 export interface ChatMessage {
