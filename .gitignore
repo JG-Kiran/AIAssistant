@@ -3,3 +3,6 @@ node_modules/
 .next/
 samplechats/
 trashed files/
+
+app/api/auth/zoho/
+app/login/callback/

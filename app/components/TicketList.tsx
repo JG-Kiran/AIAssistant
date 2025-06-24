@@ -13,6 +13,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const [page, setPage] = useState(0);
   const observer = useRef<IntersectionObserver>();
   const ITEMS_PER_PAGE = 20;  
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const lastTicketElementRef = useCallback((node: HTMLLIElement | null) => {
     if (loading) return;
@@ -71,7 +72,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   useEffect(() => {
     setPage(0); // reset paging when search or filter changes
     fetchTickets(0, searchText, searchType, modeFilter);
-  }, [searchText, searchType, modeFilter]);
+  }, [searchText, searchType, modeFilter, refreshKey]);
   
   useEffect(() => {
     if (page === 0 && (searchText || modeFilter !== 'all')) return; // already handled by above
@@ -94,12 +95,9 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
           table: 'tickets',
         },
         (payload) => {
-          // This function runs every time a new message for this ticket is inserted
-          console.log('New message received!', payload);
-
-          // Add the new message to our component's state
-          // const newTicket = payload.new;
-          // setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+          // This function runs every time a new ticket is inserted
+          console.log('New ticket received!', payload);
+          setRefreshKey((k) => k + 1);
         }
       )
       .subscribe((status, err) => {
@@ -107,7 +105,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         
         switch (status) {
           case 'SUBSCRIBED':
-            console.log('✅ WebSocket connection successfully established!');
+            console.log('✅ WebSocket connection for tickets successfully established!');
             break;
   
           case 'TIMED_OUT':

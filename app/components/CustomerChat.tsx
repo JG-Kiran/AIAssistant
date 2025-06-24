@@ -86,10 +86,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         
         switch (status) {
           case 'SUBSCRIBED':
-            console.log('✅ WebSocket connection successfully established!');
-            // You are now connected and listening for changes.
-            // You could perform an action here, like fetching initial data
-            // to ensure a consistent state.
+            console.log('✅ WebSocket connection for threads successfully established!');
             break;
   
           case 'TIMED_OUT':
@@ -105,7 +102,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             break;
         }
       });
-      
+
       console.log(`Realtime chat setup for ticket ${selectedTicketId}`)
 
     // Remove channel when component unmounts to prevent memory leaks

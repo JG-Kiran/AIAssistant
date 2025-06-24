@@ -55,11 +55,11 @@ export default function LoginPage() {
         <div className="flex flex-col items-center justify-center">
           <h2 className="text-xl font-semibold mb-4">Or Login with Zoho</h2>
           <a
-            href="/dashboard" // This will be your Zoho OAuth redirect route
+            href="/dashboard" // Change to /api/auth/zoho/login later
             className="bg-red-500 text-white px-6 py-2 rounded flex items-center gap-2"
           >
             <img src="/zoho-icon.svg" className="h-5 w-5" alt="Zoho" />
-            Log in with Zoho
+            Log in with Zoho Desk
           </a>
         </div>
       </div>
