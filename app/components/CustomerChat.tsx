@@ -32,7 +32,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   }]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
-  // 
   useEffect(() => {
     const fetchTicketDetails = async () => {
       if (!selectedTicketId) {
@@ -55,6 +54,39 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     };
 
     fetchTicketDetails();
+  }, [selectedTicketId]);
+
+  // The useEffect hook manages the real-time subscription
+  useEffect(() => {
+    //Define the channel for selected ticket
+    const channel = supabase.channel(`realtime-chat-${selectedTicketId}`);
+
+    // Set up realtime subscription
+    const subscription = channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT', // Only listen for new messages
+          schema: 'public',
+          table: 'threads',
+          filter: `ticket_reference_id=eq.${selectedTicketId}`,
+        },
+        (payload) => {
+          // This function runs every time a new message for this ticket is inserted
+          console.log('New message received!', payload);
+
+          // Add the new message to our component's state
+          const newMessage = payload.new as ChatMessage;
+          setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+        }
+      )
+      .subscribe();
+
+    // Remove channel when component unmounts to prevent memory leaks
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
   }, [selectedTicketId]);
 
   useEffect(() => {
