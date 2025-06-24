@@ -58,6 +58,11 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
   // The useEffect hook manages the real-time subscription
   useEffect(() => {
+    // Add this guard clause to prevent running with a null/undefined ID
+    if (!selectedTicketId) {
+      return; // Stop here if there's no selected ticket
+    }
+    
     //Define the channel for selected ticket
     const channel = supabase.channel(`realtime-chat-${selectedTicketId}`);
     console.log(`Startin realtime chat for ticket ${selectedTicketId}`);
@@ -70,6 +75,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           event: 'INSERT', // Only listen for new messages
           schema: 'public',
           table: 'threads',
+          filter: `ticket_reference_id=eq.${selectedTicketId}`,
         },
         (payload) => {
           // This function runs every time a new message for this ticket is inserted
@@ -111,9 +117,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             break;
         }
       });
-
-      console.log(`Realtime chat setup for ticket ${selectedTicketId}`)
-
     // Remove channel when component unmounts to prevent memory leaks
     return () => {
       console.log(`Closing channel`);

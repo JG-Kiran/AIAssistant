@@ -121,9 +121,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             break;
         }
       });
-
-      console.log(`Realtime chat setup for ticket list`)
-
     // Remove channel when component unmounts to prevent memory leaks
     return () => {
       console.log(`Closing channel`);
