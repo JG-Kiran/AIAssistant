@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
+import DOMPurify from 'dompurify';
+import { convert } from 'html-to-text';
 
 export interface ChatMessage {
   id: number;
@@ -73,13 +75,20 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         return;
       }
 
-      const formatted: ChatMessage[] = data.map((msg: any) => ({
-        id: msg.id,
-        type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer') as 'agent' | 'customer',
-        name: msg.author_name,
-        text: msg.message,
-        created_at: msg.created_time || new Date().toISOString(),
-      }));
+      const formatted: ChatMessage[] = data.map((msg: any) => {
+        console.log('Parsing message:', msg.message);
+        const plainText = convert(msg.message, {
+          wordwrap: 130
+        });
+        console.log('Plain text message:', plainText);
+        return {
+          id: msg.id,
+          type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer') as 'agent' | 'customer',
+          name: msg.author_name,
+          text: plainText,
+          created_at: msg.created_time || new Date().toISOString(),
+        };
+      });
 
       setChatMessages(formatted);
       setThreadLength(formatted.length);
