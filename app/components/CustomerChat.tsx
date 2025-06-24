@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
-import { sendZohoReply } from '../lib/send-reply';
 
 export interface ChatMessage {
   id: number;

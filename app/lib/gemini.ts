@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { customerServiceGuidelines } from './insights';
+import { standardTrainingPrompt } from './trainprompt';
 
 // Initialize the Gemini API
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
@@ -14,7 +15,7 @@ export async function generateAIResponse(chatHistory: { type: string; text: stri
       .join('\n');
 
     const prompt = 
-`You are a helpful customer service agent.
+`${standardTrainingPrompt}
 
 Analyze the following customer service insights:
 ${customerServiceGuidelines}
