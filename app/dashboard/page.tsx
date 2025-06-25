@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { getSession } from '../lib/session';
 import { redirect } from 'next/navigation';
 
-import { ProfileMenu } from "../components/ProfileMenu";
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
 import CustomerChat from "../components/CustomerChat";
@@ -25,9 +24,11 @@ export default function DashboardPage() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   return (
-    <main className="flex flex-row h-screen w-screen overflow-hidden">  
+    <main className="flex flex-row h-screen w-screen overflow-hidden bg-gray-50">  
         <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
-        <CustomerChat selectedTicketId={selectedTicketId}/>
+        <div className="flex-1 flex flex-col">
+            <CustomerChat selectedTicketId={selectedTicketId}/>
+        </div>
         <ProfileBar />
     </main>
   );

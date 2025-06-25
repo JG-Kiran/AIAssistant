@@ -14,6 +14,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const observer = useRef<IntersectionObserver>();
   const ITEMS_PER_PAGE = 20;  
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
 
   const lastTicketElementRef = useCallback((node: HTMLLIElement | null) => {
     if (loading) return;
@@ -129,21 +130,10 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
 
   }, []);
 
-  const filteredTickets = tickets.filter(ticket => {
-    const searchLower = searchText.toLowerCase();
-    let matchesSearch = false;
-    
-    if (searchType === 'name') {
-      matchesSearch = ticket.contact_name?.toLowerCase().includes(searchLower);
-    } else {
-      matchesSearch = ticket.ticket_reference_id?.toLowerCase().includes(searchLower);
-    }
-    // If no search text, all tickets match
-    if (!searchText.trim()) {
-      matchesSearch = true;
-    }
-    return matchesSearch;
-  });
+  const handleSelectTicket = (id: string) => {
+    onSelectTicket(id);
+    setSelectedTicket(id);
+  }
 
   const formatMessageTime = (timestamp: string | undefined) => {
     if (!timestamp) return '';
@@ -159,13 +149,13 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   return (
-    <section className="w-1/4 bg-gray-100 p-4 border-r border-gray-300 flex flex-col h-full">
-      <h2 className="text-xl font-semibold mb-4">Ticket List</h2>
-      <div className="mb-4 space-y-2">
+    <section className="w-1/4 bg-white p-4 border-r border-gray-200 flex flex-col h-full">
+      <h2 className="text-xl font-semibold mb-4 px-2">Conversations</h2>
+      <div className="mb-4 px-2 space-y-2">
         <input
           type="text"
           placeholder={searchType === 'name' ? "Search by name..." : "Search by reference..."}
-          className="w-full p-2 border border-gray-300 rounded-md"
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
         />
@@ -179,11 +169,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               <option value="name">Search by Name</option>
               <option value="reference">Search by Reference</option>
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
           </div>
         </div>
         <div className="relative w-full">
@@ -200,37 +185,27 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             <option value="Phone">Phone</option>
             <option value="Web">Web Chat</option>
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </div>
         </div>
       </div>
       <div className="overflow-y-auto flex-1">
         <ul>
-          {filteredTickets.map((ticket, index) => (
-            <li 
-              ref={index === filteredTickets.length - 1 ? lastTicketElementRef : null}
+          {tickets.map((ticket, index) => (
+            <li
+              ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className="p-3 mb-2 bg-white rounded-md shadow-sm cursor-pointer hover:bg-gray-50"
-              onClick={() => onSelectTicket(ticket.ticket_reference_id)}
+              className={`p-3 mb-2 rounded-md cursor-pointer transition-colors ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+              onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-center">
-                <div className="w-8 h-4 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
-                </div>
                 <div className="flex-1">
-                  <h3 className="font-medium">{ticket.contact_name}</h3>
-                  <p className="text-sm text-gray-500">{ticket.ticket_reference_id}</p>
+                  <h3 className={`font-medium ${selectedTicket === ticket.ticket_reference_id ? 'text-white' : 'text-gray-800'}`}>{ticket.contact_name}</h3>
+                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p>
                   {ticket.mode && (
-                    <p className="text-sm text-gray-500">
+                    <p className={`text-xs px-2 py-1 mt-1 inline-block rounded-full ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {ticket.mode}
                     </p>
                   )}
-                  {ticket.modified_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.modified_time)}</p>}
+                  {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}
                 </div>
               </div>
             </li>
@@ -244,4 +219,4 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
       </div>
     </section>
   );
-} 
+}
