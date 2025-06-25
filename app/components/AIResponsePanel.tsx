@@ -11,95 +11,102 @@ const SparklesIcon = ({ className }: { className: string }) => (
   </svg>
 );
 
+const CopyIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
 export default function AIResponsePanel({ chatMessages, onSelectSuggestion }: {
     chatMessages: ChatMessage[];
     onSelectSuggestion: (suggestion: string) => void;
   }) {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    const [prompt, setPrompt] = useState('');
+    const [generatedContent, setGeneratedContent] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [isSingleReply, setIsSingleReply] = useState(false);
 
   // Clear suggestions when chat messages change
   useEffect(() => {
-    setSuggestions([]);
+    setPrompt('');
+    setGeneratedContent('');
     setError('');
   }, [chatMessages]);
 
-  const handleGenerate = async () => {
+  const handleGeneration = async (isCustomPrompt: boolean) => {
+    if (isCustomPrompt && !prompt.trim()) {
+      setError('Please enter a prompt to generate a reply.');
+      return;
+    }
+
     setLoading(true);
     setError('');
-    try {
-      const aiText = await generateAIResponse(chatMessages.slice(-10)); // Limit to last 10 messages
-      const lines = aiText
-        ?.split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !/^suggest/i.test(line));
+    setGeneratedContent('');
+    setIsSingleReply(isCustomPrompt);
 
-      if (!lines || lines.length === 0) {
-        setSuggestions([]);
-        setError('No response needed at this time.');
-      } else {
-        setSuggestions(lines.slice(0, 3));
-      }
+    try {
+      const customPrompt = isCustomPrompt ? prompt : undefined;
+      const aiText = await generateAIResponse(chatMessages.slice(-10), customPrompt); 
+      setGeneratedContent(aiText || '');
     } catch (err) {
       console.error(err);
-      setError('Something went wrong generating suggestions.');
+      setError('Something went wrong generating the response.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col justify-start">
-      <h3 className="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2">
-        <SparklesIcon className="h-6 w-6 text-purple-500"/>
-        AI Assistant
-      </h3>
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-      <button
-        onClick={handleGenerate}
-        disabled={loading}
-        className="mb-6 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-lg shadow-purple-500/20"
-      >
-        {loading ? (
-          <>
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Analyzing...
-          </>
-        ) : 'Generate Suggestions'}
+  const suggestions = !isSingleReply ? generatedContent.split('\n').filter(line => line.trim()) : [];
+
+  return (
+    <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
+      <h3 className="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2"><SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant</h3>
+
+      {/* --- Quick Suggestions --- */}
+      <button onClick={() => handleGeneration(false)} disabled={loading} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+        {loading && !isSingleReply ? 'Generating...' : 'Generate Quick Suggestions'}
       </button>
 
-      {error && (
-        <p className="text-sm text-red-500 mb-4 text-center">{error}</p>
-      )}
+      {/* --- Custom Prompt Input --- */}
+      <div className="mb-2">
+        <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
+        <textarea id="ai-prompt" rows={3} className="w-full p-2 border border-slate-300 rounded-lg" placeholder="e.g., Politely decline their request..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+      </div>
+      <button onClick={() => handleGeneration(true)} disabled={loading || !prompt.trim()} className="w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
+        {loading && isSingleReply ? 'Generating...' : 'Generate From Prompt'}
+      </button>
+      
+      <div className="border-t my-6 border-slate-200"></div>
 
+      {error && <p className="text-sm text-red-500 mb-4 text-center">{error}</p>}
+      
+      {/* --- Response Area --- */}
       <div className="flex-grow overflow-y-auto pr-1">
-        <ul className="flex flex-col gap-3">
-            {suggestions.map((s, i) => (
-            <li
-                key={i}
-                onClick={() => onSelectSuggestion(s)}
-                className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-blue-400 transition-all group hover:scale-105"
-            >
-                <p className="text-sm text-slate-700">{s}</p>
-                <span className="text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity font-semibold mt-2 block text-right">
-                    Use this suggestion →
-                </span>
-            </li>
-            ))}
-        </ul>
+        {loading && <div className="text-center p-4">Loading...</div>}
 
-        {!error && suggestions.length === 0 && !loading && (
-            <div className="text-center mt-10 h-full flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                    <SparklesIcon className="h-8 w-8 text-slate-400"/>
-                </div>
-                <p className="text-slate-600 font-medium">Ready for suggestions?</p>
-                <p className="text-sm text-slate-500 italic mt-1">Click the generate button to get AI-powered replies.</p>
-            </div>
+        {generatedContent && isSingleReply && (
+          <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm relative">
+            <p className="text-sm text-slate-800 whitespace-pre-wrap">{generatedContent}</p>
+            <button onClick={() => onSelectSuggestion(generatedContent)} className="mt-4 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">Use this Reply</button>
+          </div>
+        )}
+
+        {generatedContent && !isSingleReply && (
+          <ul className="flex flex-col gap-3">
+            {suggestions.map((s, i) => (
+              <li key={i} onClick={() => onSelectSuggestion(s)} className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-blue-400">
+                <p className="text-sm text-slate-700">{s}</p>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </aside>
