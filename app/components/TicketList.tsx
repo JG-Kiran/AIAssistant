@@ -230,7 +230,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                       {ticket.mode}
                     </p>
                   )}
-                  {ticket.modified_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.created_time)}</p>}
+                  {ticket.modified_time && <p className="text-sm text-gray-500">{formatMessageTime(ticket.modified_time)}</p>}
                 </div>
               </div>
             </li>
