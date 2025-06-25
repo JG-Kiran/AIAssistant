@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ZOHO_LOGIN_URL } from '../lib/supabase';
+import { ZOHO_LOGIN_URL } from '../api/zoho/callback/route';
 
 export default function LoginPage() {
   const [agent, setagent] = useState('');
