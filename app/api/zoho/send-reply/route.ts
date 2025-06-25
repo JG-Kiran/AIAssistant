@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!);
     
-    const userEmail = (decoded as any).email;
+    const userEmail = (decoded as any).emailId;
     const userZuid = (decoded as any).zuid;
 
 

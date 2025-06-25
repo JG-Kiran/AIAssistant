@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     let { data: supabaseUser, error } = await supabaseAdmin
       .from('agents') // Assuming you have a public 'users' or 'profiles' table
       .select('*')
-      .eq('email', agentEmail)
+      .eq('emailId', agentEmail)
       .single();
 
     if (!supabaseUser) {
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         zoho_refresh_token: zohoRefreshToken,
         zoho_token_expiry: expiryTime
       })
-      .eq('email', agentEmail);
+      .eq('emailId', agentEmail);
 
     if (updateError) throw updateError;
 
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       aud: 'authenticated',
       exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
       sub: supabaseUser.id,
-      email: supabaseUser.email,
+      email: supabaseUser.emailId,
       role: 'authenticated',
       // You can add more claims here if needed
     };
