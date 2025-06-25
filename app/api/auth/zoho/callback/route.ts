@@ -9,6 +9,9 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Define the variable outside the GET function
+export let agentZuid: number | null = null;
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
@@ -33,6 +36,8 @@ export async function GET(request: NextRequest) {
     });
     const zohoTokens = await tokenResponse.json();
     const zohoAccessToken = zohoTokens.access_token;
+    const zohoRefreshToken = zohoTokens.refresh_token;
+    const expiryTime = Math.floor(Date.now() / 1000) + (60 * 60);
 
     // 2. Use the Zoho access token to get the agent's profile
     const userProfileResponse = await fetch('https://desk.zoho.com/api/v1/agents/me', {
@@ -40,11 +45,12 @@ export async function GET(request: NextRequest) {
     });
     const zohoUser = await userProfileResponse.json();
     const agentEmail = zohoUser.emailId;
-    const agentZohoId = zohoUser.id;
+    const agentZohoId = zohoUser.zuid;
+    
 
     // 3. Find or Create a user in Supabase
     let { data: supabaseUser, error } = await supabaseAdmin
-      .from('users') // Assuming you have a public 'users' or 'profiles' table
+      .from('agents') // Assuming you have a public 'users' or 'profiles' table
       .select('*')
       .eq('email', agentEmail)
       .single();
@@ -64,6 +70,18 @@ export async function GET(request: NextRequest) {
       supabaseUser = newUser!.user;
     }
 
+    // 3.5 Insert the tokens into Supabase
+    const { error: updateError } = await supabaseAdmin
+      .from('agents')
+      .update({
+        zoho_access_token: zohoAccessToken,
+        zoho_refresh_token: zohoRefreshToken,
+        zoho_token_expiry: expiryTime
+      })
+      .eq('email', agentEmail);
+
+    if (updateError) throw updateError;
+
     // 4. Mint a custom Supabase JWT for this user
     const payload = {
       aud: 'authenticated',
@@ -79,6 +97,10 @@ export async function GET(request: NextRequest) {
     // 5. Redirect user to a special page to complete the login
     const redirectUrl = new URL('/auth/callback', request.url);
     redirectUrl.searchParams.set('token', supabaseJwt);
+
+    // Update the variable inside the GET function
+    agentZuid = Number(agentZohoId);
+
     return NextResponse.redirect(redirectUrl.toString());
 
   } catch (error) {
