@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Ensure OAuth2 environment variables are set
     const clientId = process.env.ZOHO_CLIENT_ID;
     const clientSecret = process.env.ZOHO_CLIENT_SECRET;
-    const redirectUri = "https://ai-assistant-rouge.vercel.app/api/callback";
+    const redirectUri = "https://ai-assistant-git-login-test-jg-kirans-projects.vercel.app/api/callback";
 
     if (!clientId || !clientSecret || !redirectUri) {
       return NextResponse.json({ success: false, error: 'OAuth2 environment variables are not set' }, { status: 500 });

@@ -8,7 +8,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function exchangeCodeForTokens(code: string) {
   const clientId = process.env.ZOHO_CLIENT_ID;
   const clientSecret = process.env.ZOHO_CLIENT_SECRET;
-  const redirectUri = "https://ai-assistant-rouge.vercel.app/api/callback";
+  const redirectUri = "https://ai-assistant-git-login-test-jg-kirans-projects.vercel.app/api/callback";
 
   if (!clientId || !clientSecret || !redirectUri) {
     return { success: false, error: 'OAuth2 environment variables are not set' };
