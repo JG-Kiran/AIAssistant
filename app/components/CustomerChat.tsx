@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
-import { convert } from 'html-to-text';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
+import ChatLog from './ChatLog'; // <-- Import new component
+import MessageInput from './MessageInput'; // <-- Import new component
 
 export interface ChatMessage {
   id: number;
@@ -25,7 +26,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   const [message, setMessage] = useState('');
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-
   // Get the global store and the new action
   const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
 
@@ -133,102 +133,48 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     }
   };
 
-  const formatMessageTime = (timestamp: string | undefined) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
-      <div className="flex-[2] flex flex-col p-4">
-      <header className="border-b-2 border-gray-100 pb-4 mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
-              {selectedTicketId && ticketDetails
-                ? `${ticketDetails.contact_name}`
-                : 'Customer'
-              }
-            </h2>
-            {ticketDetails?.mode && <p className="text-sm text-gray-500">{ticketDetails.mode}</p>}
-        </header>
+        <div className="flex-[2] flex flex-col p-4">
+            <header className="border-b-2 border-slate-100 pb-4 mb-4">
+                <h2 className="text-2xl font-bold text-slate-800">
+                    {ticketDetails?.contact_name || 'Customer'}
+                </h2>
+                {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
+            </header>
 
-        <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg">
-          {selectedTicketId === null ? (
-            <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 text-lg">Select a ticket to view the conversation.</p>
+            <div className="flex-1 overflow-y-auto mb-4 p-4 bg-slate-50 rounded-lg">
+                {selectedTicketId === null ? (
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-slate-500 text-lg">Select a ticket to view the conversation.</p>
+                    </div>
+                ) : (
+                    <>
+                        <ChatLog messages={messagesForThisTicket} />
+                        <div ref={chatEndRef} />
+                    </>
+                )}
             </div>
-          ) : (
-            <>
-            {messagesForThisTicket.map((msg: Thread) => {
-              const plainText = convert(msg.message || '', { wordwrap: 130 });
-              const chatMsg: ChatMessage = {
+
+            {selectedTicketId !== null && (
+                <MessageInput 
+                    message={message}
+                    setMessage={setMessage}
+                    onSendMessage={handleSendMessage}
+                />
+            )}
+        </div>
+  
+        <AIResponsePanel
+            chatMessages={messagesForThisTicket.map(msg => ({
                 id: msg.id,
-                text: plainText,
+                text: msg.message || '',
                 created_at: msg.created_time,
                 type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
-                name: msg.author_name,
-              };
-              return (
-                <div key={chatMsg.id} className={`flex items-end mb-4 gap-3 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
-                  {chatMsg.type === 'customer' && (
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-xl font-bold text-gray-600">
-                        {chatMsg.name?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className={`p-4 rounded-2xl max-w-lg break-words whitespace-pre-wrap ${
-                      chatMsg.type === 'agent' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
-                      }`}>
-                      <p className="font-bold mb-1">{chatMsg.name}</p>
-                      <p>{chatMsg.text}</p>
-                      <p className="text-xs text-right mt-2">{formatMessageTime(chatMsg.created_at)}</p>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={chatEndRef} />
-            </>
-          )}
-        </div>
-        {selectedTicketId !== null && (
-          <div className="flex h-auto border-t border-gray-200 pt-4">
-            <textarea
-              placeholder="Type your message..."
-              className="flex-1 p-3 border border-gray-300 rounded-lg mr-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-            />
-            <button
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              onClick={handleSendMessage}
-            >
-              Send
-            </button>
-          </div>
-        )}
-        </div>
-
-        <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
-          <AIResponsePanel
-            chatMessages={messagesForThisTicket.map(msg => ({
-              id: msg.id,
-              text: msg.message || '',
-              created_at: msg.created_time,
-              type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
-              name: msg.author_name || '',
+                name: msg.author_name || '',
             }))}
-            onSelectSuggestion={(s) => setMessage(s)}
-          />
-        </div>
+            onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)}
+        />
     </section>
-  );
+);
 } 
