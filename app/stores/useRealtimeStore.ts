@@ -25,11 +25,52 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   threadsByTicketId: new Map(),
   channel: null,
   initialize: () => {
-    // ... your existing initialize function is perfect, no changes needed here
-    // ... (it subscribes to 'INSERT' events and adds to the map)
+    // Prevent creating duplicate connections
+    if (get().channel) {
+      return;
+    }
+
+    console.log('[RealtimeStore] Initializing global subscription to all threads...');
+    
+    const channel = supabase
+      .channel('all-threads-subscription')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'threads',
+        },
+        (payload) => {
+          console.log('New thread message received globally!', payload);
+          const newThread = payload.new as Thread;
+
+          // Update the state when a new message arrives
+          set(state => {
+            const newMap = new Map(state.threadsByTicketId);
+            const existingThreads = newMap.get(newThread.ticket_id) || [];
+            newMap.set(newThread.ticket_id, [...existingThreads, newThread]);
+            return { threadsByTicketId: newMap };
+          });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Global threads subscription is active!');
+        }
+      });
+
+    // Save the channel instance to the state
+    set({ channel });
   },
+
   close: () => {
-    // ... your existing close function is perfect, no changes needed here
+    const channel = get().channel;
+    if (channel) {
+      console.log('[RealtimeStore] Closing global subscription.');
+      supabase.removeChannel(channel);
+      set({ channel: null });
+    }
   },
 
   // ADD THIS NEW FUNCTION:

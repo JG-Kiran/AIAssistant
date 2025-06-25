@@ -1,5 +1,5 @@
 import './globals.css';
-import MainAppWrapper from './components/MainAppWeapper';
+import MainAppWrapper from './components/MainAppWrapper';
 
 export const metadata = {
   title: 'AI Assitant',
