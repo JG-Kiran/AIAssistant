@@ -48,12 +48,10 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       // Call the store action to set the initial messages
       setInitialThreadsForTicket(selectedTicketId, data as Thread[]);
     };
-    
     fetchMessages();
   }, [selectedTicketId, setInitialThreadsForTicket]);
 
   // Use useMemo to efficiently get the messages for the currently selected ticket.
-  // This code will only re-run when threadsByTicketId or selectedTicketId changes.
   const messagesForThisTicket = useMemo(() => {
     if (!selectedTicketId) return [];
     return threadsByTicketId.get(selectedTicketId) || [];
@@ -76,10 +74,8 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         console.error('Error fetching ticket details:', error);
         return;
       }
-
       setTicketDetails(data);
     };
-
     fetchTicketDetails();
   }, [selectedTicketId]);
 
@@ -141,45 +137,33 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     if (!timestamp) return '';
     const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
   };
 
-  const getChannelDisplay = () => {
-    if (!ticketDetails) return '';
-    
-    const channel = ticketDetails.mode; 
-    if (channel) {
-      return ` • ${channel.charAt(0).toUpperCase() + channel.slice(1).toLowerCase()}`;
-    } else {
-      ''
-    }
-    // Default to showing just the customer name if no channel can be determined
-    return '';
-  };
-
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
       <div className="flex-[2] flex flex-col p-4">
-        <h2 className="text-xl font-semibold mb-4">
-          {selectedTicketId && ticketDetails 
-            ? `${ticketDetails.contact_name}${getChannelDisplay() || ' • Chat'}`
-            : 'Customer'
-          }
-        </h2>
+      <header className="border-b-2 border-gray-100 pb-4 mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {selectedTicketId && ticketDetails
+                ? `${ticketDetails.contact_name}`
+                : 'Customer'
+              }
+            </h2>
+            {ticketDetails?.mode && <p className="text-sm text-gray-500">{ticketDetails.mode}</p>}
+        </header>
 
-        <div className="flex-1 overflow-y-auto mb-4">
+        <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg">
           {selectedTicketId === null ? (
-            <p className="text-gray-500">Select a ticket to view the conversation.</p>
+            <div className="flex items-center justify-center h-full">
+                <p className="text-gray-500 text-lg">Select a ticket to view the conversation.</p>
+            </div>
           ) : (
             <>
             {messagesForThisTicket.map((msg: Thread) => {
-              // Map Thread to ChatMessage for display
               const plainText = convert(msg.message || '', { wordwrap: 130 });
               const chatMsg: ChatMessage = {
                 id: msg.id,
@@ -189,34 +173,19 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
                 name: msg.author_name,
               };
               return (
-                <div key={chatMsg.id} className={`flex mb-4 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                <div key={chatMsg.id} className={`flex items-end mb-4 gap-3 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
                   {chatMsg.type === 'customer' && (
-                    <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-xl font-bold text-gray-600">
+                        {chatMsg.name?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <div className="flex flex-col">
-                    <span className="text-sm text-gray-600 mb-1">
-                      {chatMsg.name}
-                    </span>
-                    <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
-                      chatMsg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                  <div className={`p-4 rounded-2xl max-w-lg break-words whitespace-pre-wrap ${
+                      chatMsg.type === 'agent' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'
                       }`}>
-                      {chatMsg.text}
-                    </div>
-                    <span className="text-xs text-gray-500 mt-1">
-                      {formatMessageTime(chatMsg.created_at)}
-                    </span>
+                      <p className="font-bold mb-1">{chatMsg.name}</p>
+                      <p>{chatMsg.text}</p>
+                      <p className="text-xs text-right mt-2">{formatMessageTime(chatMsg.created_at)}</p>
                   </div>
-                  {chatMsg.type === 'agent' && (
-                    <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -225,27 +194,25 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           )}
         </div>
         {selectedTicketId !== null && (
-          <div className="flex h-1/5 border-t border-gray-300 pt-4">
+          <div className="flex h-auto border-t border-gray-200 pt-4">
             <textarea
               placeholder="Type your message..."
-              className="flex-1 p-2 border border-gray-300 rounded-md mr-2 resize-none overflow-y-auto leading-relaxed"
+              className="flex-1 p-3 border border-gray-300 rounded-lg mr-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();    // Prevent newline
+                  e.preventDefault();
                   handleSendMessage();
                 }
               }}
             />
-            <div className="flex items-end">
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md whitespace-nowrap flex-shrink-0"
-                onClick={handleSendMessage}
-              >
-                Send
-              </button>
-            </div>
+            <button
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handleSendMessage}
+            >
+              Send
+            </button>
           </div>
         )}
         </div>
