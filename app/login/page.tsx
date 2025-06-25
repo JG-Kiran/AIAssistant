@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ZOHO_LOGIN_URL } from '../lib/supabase';
 
 export default function LoginPage() {
   const [agent, setagent] = useState('');
@@ -55,7 +56,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center justify-center">
           <h2 className="text-xl font-semibold mb-4">Or Login with Zoho</h2>
           <a
-            href="https://accounts.zoho.com/oauth/v2/auth?scope=Desk.tickets.READ,Desk.tickets.CREATE,Desk.tickets.ALL&client_id=YOUR_CLIENT_ID&response_type=code&access_type=offline&redirect_uri=YOUR_REDIRECT_URI"
+            href={ZOHO_LOGIN_URL}
             className="bg-red-500 text-white px-6 py-2 rounded flex items-center gap-2"
           >
             <img src="/zoho-icon.svg" className="h-5 w-5" alt="Zoho" />

@@ -5,10 +5,13 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+const clientId = process.env.ZOHO_CLIENT_ID;
+const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+const redirectUri = "https://ai-assistant-git-login-test-jg-kirans-projects.vercel.app/api/callback";
+
+export const ZOHO_LOGIN_URL = `https://accounts.zoho.com/oauth/v2/auth?scope=Desk.tickets.READ,Desk.tickets.CREATE,Desk.tickets.ALL&client_id=${clientId}&response_type=code&access_type=offline&redirect_uri=${redirectUri}`;
+
 export async function exchangeCodeForTokens(code: string) {
-  const clientId = process.env.ZOHO_CLIENT_ID;
-  const clientSecret = process.env.ZOHO_CLIENT_SECRET;
-  const redirectUri = "https://ai-assistant-git-login-test-jg-kirans-projects.vercel.app/api/callback";
 
   if (!clientId || !clientSecret || !redirectUri) {
     return { success: false, error: 'OAuth2 environment variables are not set' };
