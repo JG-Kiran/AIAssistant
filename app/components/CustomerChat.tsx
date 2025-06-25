@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { convert } from 'html-to-text';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useRealtime } from '../lib/RealtimeContext';
+import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
 
 export interface ChatMessage {
   id: number;
@@ -33,7 +33,39 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     created_at: new Date().toISOString(),
   }]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const { subscribeToTicket, unsubscribeFromTicket } = useRealtime();
+
+  // Get the global store and the new action
+  const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
+
+  // This effect now fetches initial messages and puts them in the GLOBAL store
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedTicketId) {
+        return;
+      }
+      const { data, error } = await supabase
+        .from('threads')
+        .select('*')
+        .eq('ticket_reference_id', selectedTicketId)
+        .order('created_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+      // Call the store action to set the initial messages
+      setInitialThreadsForTicket(selectedTicketId, data as Thread[]);
+    };
+    
+    fetchMessages();
+  }, [selectedTicketId, setInitialThreadsForTicket]);
+
+  // Use useMemo to efficiently get the messages for the currently selected ticket.
+  // This code will only re-run when threadsByTicketId or selectedTicketId changes.
+  const messagesForThisTicket = useMemo(() => {
+    if (!selectedTicketId) return [];
+    return threadsByTicketId.get(selectedTicketId) || [];
+  }, [threadsByTicketId, selectedTicketId]);
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -58,27 +90,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
     fetchTicketDetails();
   }, [selectedTicketId]);
-
-  useEffect(() => {
-    if (!selectedTicketId) {
-      return;
-    }
-
-    // Define the function to handle new messages
-    const handleNewMessage = (payload: any) => {
-      console.log('New message received in component!', payload);
-      setChatMessages((currentMessages) => [...currentMessages, payload.new as ChatMessage]);
-    };
-
-    // Use the provider to subscribe
-    const channel = subscribeToTicket(selectedTicketId, handleNewMessage);
-
-    // The cleanup function is now much simpler
-    return () => {
-      unsubscribeFromTicket(channel);
-    };
-
-  }, [selectedTicketId, subscribeToTicket, unsubscribeFromTicket]);
 
   // // Initialize realtime subscription for chats
   // useEffect(() => {
@@ -306,37 +317,48 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             <p className="text-gray-500">Select a ticket to view the conversation.</p>
           ) : (
             <>
-            {chatMessages.map((msg) => (
-              <div key={msg.id} className={`flex mb-4 ${msg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
-                {msg.type === 'customer' && (
-                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
+            {messagesForThisTicket.map((msg: Thread) => {
+              // Map Thread to ChatMessage for display
+              const plainText = convert(msg.message || '', { wordwrap: 130 });
+              const chatMsg: ChatMessage = {
+                id: msg.id,
+                text: plainText,
+                created_at: msg.created_time,
+                type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
+                name: msg.author_name,
+              };
+              return (
+                <div key={chatMsg.id} className={`flex mb-4 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                  {chatMsg.type === 'customer' && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-600 mb-1">
+                      {chatMsg.name}
+                    </span>
+                    <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
+                      chatMsg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                      }`}>
+                      {chatMsg.text}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-1">
+                      {formatMessageTime(chatMsg.created_at)}
+                    </span>
                   </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-600 mb-1">
-                    {msg.name}
-                  </span>
-                  <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
-                    msg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-                    }`}>
-                    {msg.text}
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1">
-                    {formatMessageTime(msg.created_at)}
-                  </span>
+                  {chatMsg.type === 'agent' && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                {msg.type === 'agent' && (
-                  <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <div ref={chatEndRef} />
             </>
           )}
@@ -367,12 +389,18 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         )}
         </div>
 
-        <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
+        {/* <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
           <AIResponsePanel
-            chatMessages={chatMessages}
+            chatMessages={messagesForThisTicket.map(msg => ({
+              id: msg.id,
+              text: msg.content,
+              created_at: msg.created_at,
+              type: 'customer', // or logic for agent/customer
+              name: '',
+            }))}
             onSelectSuggestion={(s) => setMessage(s)}
           />
-        </div>
+        </div> */}
     </section>
   );
 } 
