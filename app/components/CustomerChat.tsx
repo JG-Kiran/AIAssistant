@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { convert } from 'html-to-text';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
-import { useMemo } from 'react';
 
 export interface ChatMessage {
   id: number;
@@ -35,6 +34,39 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   }]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Get the global store and the new action
+  const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
+
+  // This effect now fetches initial messages and puts them in the GLOBAL store
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedTicketId) {
+        return;
+      }
+      const { data, error } = await supabase
+        .from('threads')
+        .select('*')
+        .eq('ticket_reference_id', selectedTicketId)
+        .order('created_time', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return;
+      }
+      // Call the store action to set the initial messages
+      setInitialThreadsForTicket(selectedTicketId, data as Thread[]);
+    };
+    
+    fetchMessages();
+  }, [selectedTicketId, setInitialThreadsForTicket]);
+
+  // Use useMemo to efficiently get the messages for the currently selected ticket.
+  // This code will only re-run when threadsByTicketId or selectedTicketId changes.
+  const messagesForThisTicket = useMemo(() => {
+    if (!selectedTicketId) return [];
+    return threadsByTicketId.get(selectedTicketId) || [];
+  }, [threadsByTicketId, selectedTicketId]);
+
   useEffect(() => {
     const fetchTicketDetails = async () => {
       if (!selectedTicketId) {
@@ -58,16 +90,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
     fetchTicketDetails();
   }, [selectedTicketId]);
-
-  // This line subscribes the component to any changes in the `threadsByTicketId` map
-  const threadsByTicketId = useRealtimeStore(state => state.threadsByTicketId);
-
-  // Use useMemo to efficiently get the messages for the currently selected ticket.
-  // This code will only re-run when threadsByTicketId or selectedTicketId changes.
-  const messagesForThisTicket = useMemo(() => {
-    if (!selectedTicketId) return [];
-    return threadsByTicketId.get(selectedTicketId) || [];
-  }, [threadsByTicketId, selectedTicketId]);
 
   // // Initialize realtime subscription for chats
   // useEffect(() => {
@@ -295,15 +317,15 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             <p className="text-gray-500">Select a ticket to view the conversation.</p>
           ) : (
             <>
-            {messagesForThisTicket.map((msg) => {
+            {messagesForThisTicket.map((msg: Thread) => {
               // Map Thread to ChatMessage for display
+              const plainText = convert(msg.message || '', { wordwrap: 130 });
               const chatMsg: ChatMessage = {
                 id: msg.id,
-                text: msg.content,
-                created_at: msg.created_at,
-                // You may want to add more logic for type and name if available in Thread
-                type: 'customer', // Default, or use msg.author_type/msg.direction if available
-                name: '', // Use msg.author_name if available
+                text: plainText,
+                created_at: msg.created_time,
+                type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
+                name: msg.author_name,
               };
               return (
                 <div key={chatMsg.id} className={`flex mb-4 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
@@ -367,7 +389,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         )}
         </div>
 
-        <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
+        {/* <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
           <AIResponsePanel
             chatMessages={messagesForThisTicket.map(msg => ({
               id: msg.id,
@@ -378,7 +400,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             }))}
             onSelectSuggestion={(s) => setMessage(s)}
           />
-        </div>
+        </div> */}
     </section>
   );
 } 
