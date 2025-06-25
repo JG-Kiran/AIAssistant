@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { convert } from 'html-to-text';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useRealtime } from '../lib/RealtimeContext';
+import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
+import { useMemo } from 'react';
 
 export interface ChatMessage {
   id: number;
@@ -33,7 +34,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     created_at: new Date().toISOString(),
   }]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const { subscribeToTicket, unsubscribeFromTicket } = useRealtime();
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
@@ -59,109 +59,98 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     fetchTicketDetails();
   }, [selectedTicketId]);
 
+  // This line subscribes the component to any changes in the `threadsByTicketId` map
+  const threadsByTicketId = useRealtimeStore(state => state.threadsByTicketId);
+
+  // Use useMemo to efficiently get the messages for the currently selected ticket.
+  // This code will only re-run when threadsByTicketId or selectedTicketId changes.
+  const messagesForThisTicket = useMemo(() => {
+    if (!selectedTicketId) return [];
+    return threadsByTicketId.get(selectedTicketId) || [];
+  }, [threadsByTicketId, selectedTicketId]);
+
+  // Initialize realtime subscription for chats
   useEffect(() => {
-    if (!selectedTicketId) {
-      return;
-    }
-
-    // Define the function to handle new messages
-    const handleNewMessage = (payload: any) => {
-      console.log('New message received in component!', payload);
-      setChatMessages((currentMessages) => [...currentMessages, payload.new as ChatMessage]);
-    };
-
-    // Use the provider to subscribe
-    const channel = subscribeToTicket(selectedTicketId, handleNewMessage);
-
-    // The cleanup function is now much simpler
-    return () => {
-      unsubscribeFromTicket(channel);
-    };
-
-  }, [selectedTicketId, subscribeToTicket, unsubscribeFromTicket]);
-
-  // // Initialize realtime subscription for chats
-  // useEffect(() => {
-  //   // Create the channel only once when the component mounts.
-  //   const channel = supabase.channel('customer-chat');
+    // Create the channel only once when the component mounts.
+    const channel = supabase.channel('customer-chat');
   
-  //   // When the component unmounts, remove the single channel.
-  //   return () => {
-  //     console.log('Cleaning up the main chat channel');
-  //     supabase.removeChannel(channel);
-  //   }
-  // }, []);
+    // When the component unmounts, remove the single channel.
+    return () => {
+      console.log('Cleaning up the main chat channel');
+      supabase.removeChannel(channel);
+    }
+  }, []);
 
-  // // Manage subscription when ticket id changes
-  // useEffect(() => {
-  //   let channel: RealtimeChannel;
+  // Manage subscription when ticket id changes
+  useEffect(() => {
+    let channel: RealtimeChannel;
 
-  //   const setupSubscription = async () => {
-  //     // Add this guard clause to prevent running with a null/undefined ID
-  //     if (!selectedTicketId) {
-  //       return;
-  //     }
+    const setupSubscription = async () => {
+      // Add this guard clause to prevent running with a null/undefined ID
+      if (!selectedTicketId) {
+        return;
+      }
 
-  //     channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
+      channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
     
-  //     channel
-  //     .on(
-  //       'postgres_changes',
-  //       {
-  //         event: 'INSERT',
-  //         schema: 'public',
-  //         table: 'threads',
-  //         filter: `ticket_id=eq.${selectedTicketId}`,
-  //       },
-  //       (payload) => {
-  //         console.log('New message received!', payload);
-  //         // Add logic to update your state here
-  //         const newMsgRaw = payload.new as any;
-  //           if (newMsgRaw.ticket_reference_id === selectedTicketId) {
-  //             const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
-  //             const newMessage: ChatMessage = {
-  //               id: newMsgRaw.id,
-  //               type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
-  //               name: newMsgRaw.author_name,
-  //               text: plainText,
-  //               created_at: newMsgRaw.created_time || new Date().toISOString(),
-  //             };
-  //           setChatMessages((currentMessages) => [...currentMessages, newMessage]);
-  //           }
-  //       }
-  //     )
-  //     .subscribe((status, err) => {
-  //       switch (status) {
-  //         case 'SUBSCRIBED':
-  //           console.log('✅ WebSocket connection for threads successfully established!');
-  //           break;
+      channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'threads',
+          filter: `ticket_id=eq.${selectedTicketId}`,
+        },
+        (payload) => {
+          console.log('New message received!', payload);
+          // Add logic to update your state here
+          const newMsgRaw = payload.new as any;
+            if (newMsgRaw.ticket_reference_id === selectedTicketId) {
+              const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
+              const newMessage: ChatMessage = {
+                id: newMsgRaw.id,
+                type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
+                name: newMsgRaw.author_name,
+                text: plainText,
+                created_at: newMsgRaw.created_time || new Date().toISOString(),
+              };
+            setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+            }
+        }
+      )
+      .subscribe((status, err) => {
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ WebSocket connection for threads successfully established!');
+            break;
 
-  //         case 'TIMED_OUT':
-  //           console.error('Connection timed out. Retrying...');
-  //           break;
+          case 'TIMED_OUT':
+            console.error('Connection timed out. Retrying...');
+            break;
 
-  //         case 'CHANNEL_ERROR':
-  //           console.error('A channel error occurred.', err);
-  //           break;
+          case 'CHANNEL_ERROR':
+            console.error('A channel error occurred.', err);
+            break;
             
-  //         case 'CLOSED':
-  //           console.log('WebSocket connection closed.');
-  //           break;
-  //       }
-  //   })};
+          case 'CLOSED':
+            console.log('WebSocket connection closed.');
+            break;
+        }
+    })};
 
-  //   setupSubscription();
+    setupSubscription();
 
-  //   // The cleanup for THIS effect is to unsubscribe from the events,
-  //   // but it leaves the main channel open.
-  //   return () => {
-  //     if (channel) {
-  //       console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
-  //       // Removing the channel ensures a clean state for the next subscription.
-  //       supabase.removeChannel(channel);
-  //     }
-  //   };
-  // }, [selectedTicketId]);
+    // The cleanup for THIS effect is to unsubscribe from the events,
+    // but it leaves the main channel open.
+    return () => {
+      if (channel) {
+        console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
+        // Removing the channel ensures a clean state for the next subscription.
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [selectedTicketId]);
 
   useEffect(() => {
     const fetchMessages = async () => {
