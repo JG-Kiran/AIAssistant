@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 );
 
 // Define the variable outside the GET function
-export let agentZuid: number | null = null;
+//export let agentZuid: number | null = null;
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -95,11 +95,11 @@ export async function GET(request: NextRequest) {
     const supabaseJwt = jwt.sign(payload, process.env.SUPABASE_JWT_SECRET!);
 
     // 5. Redirect user to a special page to complete the login
-    const redirectUrl = new URL('/auth/callback', request.url);
+    const redirectUrl = new URL('/login/callback', request.url);
     redirectUrl.searchParams.set('token', supabaseJwt);
 
     // Update the variable inside the GET function
-    agentZuid = Number(agentZohoId);
+    //agentZuid = Number(agentZohoId);
 
     return NextResponse.redirect(redirectUrl.toString());
 
