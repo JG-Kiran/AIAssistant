@@ -5,7 +5,7 @@ export function GET() {
   authUrl.searchParams.append('response_type', 'code');
   authUrl.searchParams.append('client_id', process.env.ZOHO_CLIENT_ID!);
   authUrl.searchParams.append('scope', 'Desk.tickets.READ,Desk.tickets.WRITE'); // Add necessary scopes
-  authUrl.searchParams.append('redirect_uri', process.env.ZOHO_REDIRECT_URI!); // e.g., https://your-app.com/api/auth/zoho/callback
+  authUrl.searchParams.append('redirect_uri', "https://ai-assistant-git-auth-test-jg-kirans-projects.vercel.app/api/auth/zoho/callback"); // e.g., https://your-app.com/api/auth/zoho/callback
   authUrl.searchParams.append('access_type', 'offline');
 
   return NextResponse.redirect(authUrl.toString());

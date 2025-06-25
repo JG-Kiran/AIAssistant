@@ -1,4 +1,5 @@
 // /app/api/auth/zoho/callback/route.ts
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
@@ -10,7 +11,7 @@ const supabaseAdmin = createClient(
 );
 
 // Define the variable outside the GET function
-export let agentZuid: number | null = null;
+//export let agentZuid: number | null = null;
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     let { data: supabaseUser, error } = await supabaseAdmin
       .from('agents') // Assuming you have a public 'users' or 'profiles' table
       .select('*')
-      .eq('email', agentEmail)
+      .eq('emailId', agentEmail)
       .single();
 
     if (!supabaseUser) {
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
         zoho_refresh_token: zohoRefreshToken,
         zoho_token_expiry: expiryTime
       })
-      .eq('email', agentEmail);
+      .eq('emailId', agentEmail);
 
     if (updateError) throw updateError;
 
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
       aud: 'authenticated',
       exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
       sub: supabaseUser.id,
-      email: supabaseUser.email,
+      email: supabaseUser.emailId,
       role: 'authenticated',
       // You can add more claims here if needed
     };
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     redirectUrl.searchParams.set('token', supabaseJwt);
 
     // Update the variable inside the GET function
-    agentZuid = Number(agentZohoId);
+    //agentZuid = Number(agentZohoId);
 
     return NextResponse.redirect(redirectUrl.toString());
 
