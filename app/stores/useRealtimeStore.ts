@@ -5,7 +5,8 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 export type Thread = {
   id: number;
   ticket_id: string;
-  message: string; // The raw HTML message from the database
+  ticket_reference_id: string;
+  message: string;
   author_type: 'AGENT' | 'CUSTOMER';
   direction: 'in' | 'out';
   author_name: string;
@@ -17,7 +18,6 @@ interface RealtimeState {
   channel: RealtimeChannel | null;
   initialize: () => void;
   close: () => void;
-  // Add this new action to the interface
   setInitialThreadsForTicket: (ticketId: string, threads: Thread[]) => void;
 }
 
@@ -29,7 +29,6 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     if (get().channel) {
       return;
     }
-
     console.log('[RealtimeStore] Initializing global subscription to all threads...');
     
     const channel = supabase
@@ -45,11 +44,16 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           console.log('New thread message received globally!', payload);
           const newThread = payload.new as Thread;
 
+          if (!newThread.ticket_reference_id) {
+            console.error("Realtime update received without a ticket_reference_id. Cannot update UI.");
+            return;
+          }
+
           // Update the state when a new message arrives
           set(state => {
             const newMap = new Map(state.threadsByTicketId);
-            const existingThreads = newMap.get(newThread.ticket_id) || [];
-            newMap.set(newThread.ticket_id, [...existingThreads, newThread]);
+            const existingThreads = newMap.get(newThread.ticket_reference_id) || [];
+            newMap.set(newThread.ticket_reference_id, [...existingThreads, newThread]);
             return { threadsByTicketId: newMap };
           });
         }
