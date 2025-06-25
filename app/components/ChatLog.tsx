@@ -41,8 +41,8 @@ export default function ChatLog({ messages }: ChatLogProps) {
         // Add date separator if the day has changed
         if (!lastDate || !isSameDay(currentMessageDate, lastDate)) {
             chatElements.push(
-                <div key={`date-${msg.id}`} className="flex justify-center my-4">
-                    <span className="bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full">
+                <div key={`date-${msg.id}`} className="flex justify-center my-3">
+                    <span className="bg-slate-200 text-slate-600 text-xs font-semibold px-3 py-1 my-5 rounded-full">
                         {formatDateSeparator(currentMessageDate)}
                     </span>
                 </div>
@@ -58,7 +58,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
 
         // Render the message row
         chatElements.push(
-            <div key={msg.id} className={`flex w-full items-start gap-3 ${isFirstInSequence ? 'mt-3' : 'mt-0'}`}>
+            <div key={msg.id} className={`flex w-full items-start gap-3 ${isFirstInSequence ? 'mt-3' : 'mt-1'}`}>
                 
                 {/* Customer messages (Avatar on the left) */}
                 {authorType === 'customer' && (
@@ -82,12 +82,12 @@ export default function ChatLog({ messages }: ChatLogProps) {
                             {isFirstInSequence && <p className="font-bold text-sm text-blue-200 mb-1">{msg.author_name}</p>}
                             <p className="text-base whitespace-pre-wrap">{plainText}</p>
                         </div>
-                        <div className="w-8 shrink-0">{isFirstInSequence && <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">A</div>}</div>
+                        {/* <div className="w-8 shrink-0">{isFirstInSequence && <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">A</div>}</div> */}
                     </div>
                 )}
             </div>
         );
     });
 
-    return <div className="space-y-2">{chatElements}</div>;
+    return <div>{chatElements}</div>;
 }
