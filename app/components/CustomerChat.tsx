@@ -69,88 +69,88 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     return threadsByTicketId.get(selectedTicketId) || [];
   }, [threadsByTicketId, selectedTicketId]);
 
-  // Initialize realtime subscription for chats
-  useEffect(() => {
-    // Create the channel only once when the component mounts.
-    const channel = supabase.channel('customer-chat');
+  // // Initialize realtime subscription for chats
+  // useEffect(() => {
+  //   // Create the channel only once when the component mounts.
+  //   const channel = supabase.channel('customer-chat');
   
-    // When the component unmounts, remove the single channel.
-    return () => {
-      console.log('Cleaning up the main chat channel');
-      supabase.removeChannel(channel);
-    }
-  }, []);
+  //   // When the component unmounts, remove the single channel.
+  //   return () => {
+  //     console.log('Cleaning up the main chat channel');
+  //     supabase.removeChannel(channel);
+  //   }
+  // }, []);
 
-  // Manage subscription when ticket id changes
-  useEffect(() => {
-    let channel: RealtimeChannel;
+  // // Manage subscription when ticket id changes
+  // useEffect(() => {
+  //   let channel: RealtimeChannel;
 
-    const setupSubscription = async () => {
-      // Add this guard clause to prevent running with a null/undefined ID
-      if (!selectedTicketId) {
-        return;
-      }
+  //   const setupSubscription = async () => {
+  //     // Add this guard clause to prevent running with a null/undefined ID
+  //     if (!selectedTicketId) {
+  //       return;
+  //     }
 
-      channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
+  //     channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
     
-      channel
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'threads',
-          filter: `ticket_id=eq.${selectedTicketId}`,
-        },
-        (payload) => {
-          console.log('New message received!', payload);
-          // Add logic to update your state here
-          const newMsgRaw = payload.new as any;
-            if (newMsgRaw.ticket_reference_id === selectedTicketId) {
-              const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
-              const newMessage: ChatMessage = {
-                id: newMsgRaw.id,
-                type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
-                name: newMsgRaw.author_name,
-                text: plainText,
-                created_at: newMsgRaw.created_time || new Date().toISOString(),
-              };
-            setChatMessages((currentMessages) => [...currentMessages, newMessage]);
-            }
-        }
-      )
-      .subscribe((status, err) => {
-        switch (status) {
-          case 'SUBSCRIBED':
-            console.log('✅ WebSocket connection for threads successfully established!');
-            break;
+  //     channel
+  //     .on(
+  //       'postgres_changes',
+  //       {
+  //         event: 'INSERT',
+  //         schema: 'public',
+  //         table: 'threads',
+  //         filter: `ticket_id=eq.${selectedTicketId}`,
+  //       },
+  //       (payload) => {
+  //         console.log('New message received!', payload);
+  //         // Add logic to update your state here
+  //         const newMsgRaw = payload.new as any;
+  //           if (newMsgRaw.ticket_reference_id === selectedTicketId) {
+  //             const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
+  //             const newMessage: ChatMessage = {
+  //               id: newMsgRaw.id,
+  //               type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
+  //               name: newMsgRaw.author_name,
+  //               text: plainText,
+  //               created_at: newMsgRaw.created_time || new Date().toISOString(),
+  //             };
+  //           setChatMessages((currentMessages) => [...currentMessages, newMessage]);
+  //           }
+  //       }
+  //     )
+  //     .subscribe((status, err) => {
+  //       switch (status) {
+  //         case 'SUBSCRIBED':
+  //           console.log('✅ WebSocket connection for threads successfully established!');
+  //           break;
 
-          case 'TIMED_OUT':
-            console.error('Connection timed out. Retrying...');
-            break;
+  //         case 'TIMED_OUT':
+  //           console.error('Connection timed out. Retrying...');
+  //           break;
 
-          case 'CHANNEL_ERROR':
-            console.error('A channel error occurred.', err);
-            break;
+  //         case 'CHANNEL_ERROR':
+  //           console.error('A channel error occurred.', err);
+  //           break;
             
-          case 'CLOSED':
-            console.log('WebSocket connection closed.');
-            break;
-        }
-    })};
+  //         case 'CLOSED':
+  //           console.log('WebSocket connection closed.');
+  //           break;
+  //       }
+  //   })};
 
-    setupSubscription();
+  //   setupSubscription();
 
-    // The cleanup for THIS effect is to unsubscribe from the events,
-    // but it leaves the main channel open.
-    return () => {
-      if (channel) {
-        console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
-        // Removing the channel ensures a clean state for the next subscription.
-        supabase.removeChannel(channel);
-      }
-    };
-  }, [selectedTicketId]);
+  //   // The cleanup for THIS effect is to unsubscribe from the events,
+  //   // but it leaves the main channel open.
+  //   return () => {
+  //     if (channel) {
+  //       console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
+  //       // Removing the channel ensures a clean state for the next subscription.
+  //       supabase.removeChannel(channel);
+  //     }
+  //   };
+  // }, [selectedTicketId]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -295,37 +295,48 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             <p className="text-gray-500">Select a ticket to view the conversation.</p>
           ) : (
             <>
-            {chatMessages.map((msg) => (
-              <div key={msg.id} className={`flex mb-4 ${msg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
-                {msg.type === 'customer' && (
-                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
+            {messagesForThisTicket.map((msg) => {
+              // Map Thread to ChatMessage for display
+              const chatMsg: ChatMessage = {
+                id: msg.id,
+                text: msg.content,
+                created_at: msg.created_at,
+                // You may want to add more logic for type and name if available in Thread
+                type: 'customer', // Default, or use msg.author_type/msg.direction if available
+                name: '', // Use msg.author_name if available
+              };
+              return (
+                <div key={chatMsg.id} className={`flex mb-4 ${chatMsg.type === 'agent' ? 'justify-end' : 'justify-start'}`}>
+                  {chatMsg.type === 'customer' && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full mr-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-600 mb-1">
+                      {chatMsg.name}
+                    </span>
+                    <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
+                      chatMsg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+                      }`}>
+                      {chatMsg.text}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-1">
+                      {formatMessageTime(chatMsg.created_at)}
+                    </span>
                   </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-600 mb-1">
-                    {msg.name}
-                  </span>
-                  <div className={`p-3 rounded-lg max-w-xs break-words whitespace-pre-wrap overflow-hidden ${
-                    msg.type === 'agent' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-                    }`}>
-                    {msg.text}
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1">
-                    {formatMessageTime(msg.created_at)}
-                  </span>
+                  {chatMsg.type === 'agent' && (
+                    <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                {msg.type === 'agent' && (
-                  <div className="w-8 h-8 bg-gray-300 rounded-full ml-3 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <div ref={chatEndRef} />
             </>
           )}
@@ -358,7 +369,13 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
         <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
           <AIResponsePanel
-            chatMessages={chatMessages}
+            chatMessages={messagesForThisTicket.map(msg => ({
+              id: msg.id,
+              text: msg.content,
+              created_at: msg.created_at,
+              type: 'customer', // or logic for agent/customer
+              name: '',
+            }))}
             onSelectSuggestion={(s) => setMessage(s)}
           />
         </div>
