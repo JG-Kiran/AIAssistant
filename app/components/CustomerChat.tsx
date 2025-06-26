@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { convert } from 'html-to-text';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
 
 export interface ChatMessage {
@@ -25,13 +24,6 @@ export interface TicketDetails {
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
   const [message, setMessage] = useState('');
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([{
-    id: 0,
-    type: 'customer',
-    name: '',
-    text: '',
-    created_at: new Date().toISOString(),
-  }]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Get the global store and the new action
@@ -91,137 +83,17 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     fetchTicketDetails();
   }, [selectedTicketId]);
 
-  // // Initialize realtime subscription for chats
-  // useEffect(() => {
-  //   // Create the channel only once when the component mounts.
-  //   const channel = supabase.channel('customer-chat');
-  
-  //   // When the component unmounts, remove the single channel.
-  //   return () => {
-  //     console.log('Cleaning up the main chat channel');
-  //     supabase.removeChannel(channel);
-  //   }
-  // }, []);
-
-  // // Manage subscription when ticket id changes
-  // useEffect(() => {
-  //   let channel: RealtimeChannel;
-
-  //   const setupSubscription = async () => {
-  //     // Add this guard clause to prevent running with a null/undefined ID
-  //     if (!selectedTicketId) {
-  //       return;
-  //     }
-
-  //     channel = supabase.channel(`chat-room-for-ticket-${selectedTicketId}`);
-    
-  //     channel
-  //     .on(
-  //       'postgres_changes',
-  //       {
-  //         event: 'INSERT',
-  //         schema: 'public',
-  //         table: 'threads',
-  //         filter: `ticket_id=eq.${selectedTicketId}`,
-  //       },
-  //       (payload) => {
-  //         console.log('New message received!', payload);
-  //         // Add logic to update your state here
-  //         const newMsgRaw = payload.new as any;
-  //           if (newMsgRaw.ticket_reference_id === selectedTicketId) {
-  //             const plainText = convert(newMsgRaw.message, { wordwrap: 130 });
-  //             const newMessage: ChatMessage = {
-  //               id: newMsgRaw.id,
-  //               type: (newMsgRaw.author_type === 'AGENT' || newMsgRaw.direction === 'out' ? 'agent' : 'customer'),
-  //               name: newMsgRaw.author_name,
-  //               text: plainText,
-  //               created_at: newMsgRaw.created_time || new Date().toISOString(),
-  //             };
-  //           setChatMessages((currentMessages) => [...currentMessages, newMessage]);
-  //           }
-  //       }
-  //     )
-  //     .subscribe((status, err) => {
-  //       switch (status) {
-  //         case 'SUBSCRIBED':
-  //           console.log('✅ WebSocket connection for threads successfully established!');
-  //           break;
-
-  //         case 'TIMED_OUT':
-  //           console.error('Connection timed out. Retrying...');
-  //           break;
-
-  //         case 'CHANNEL_ERROR':
-  //           console.error('A channel error occurred.', err);
-  //           break;
-            
-  //         case 'CLOSED':
-  //           console.log('WebSocket connection closed.');
-  //           break;
-  //       }
-  //   })};
-
-  //   setupSubscription();
-
-  //   // The cleanup for THIS effect is to unsubscribe from the events,
-  //   // but it leaves the main channel open.
-  //   return () => {
-  //     if (channel) {
-  //       console.log(`Cleaning up channel for ticket ${selectedTicketId}`);
-  //       // Removing the channel ensures a clean state for the next subscription.
-  //       supabase.removeChannel(channel);
-  //     }
-  //   };
-  // }, [selectedTicketId]);
-
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedTicketId) {
-        setChatMessages([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('threads')
-        .select('*')
-        .eq('ticket_reference_id', selectedTicketId)
-        .order('created_time', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
-      }
-
-      const formatted: ChatMessage[] = data.map((msg: any) => {
-        const plainText = convert(msg.message, {
-          wordwrap: 130
-        });
-        return {
-          id: msg.id,
-          type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer') as 'agent' | 'customer',
-          name: msg.author_name,
-          text: plainText,
-          created_at: msg.created_time || new Date().toISOString(),
-        };
-      });
-
-      setChatMessages(formatted);
-    };
-    
-    fetchMessages();
-  }, [selectedTicketId]);
-
   // Clear message box when chat opened
   useEffect(() => {
     setMessage('');
   }, [selectedTicketId]);
 
-  // Autoscroll to bottom when chat opened
+  // Autoscroll to bottom when chat opened (Using Zustand)
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages]);
+  }, [messagesForThisTicket]);
 
   // Define a dictionary to map ticket modes to channels
   const modeToChannelMap: { [key: string]: string } = {
@@ -256,15 +128,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           alert('Failed to send reply to Zoho Desk: ' + (result.error || 'Unknown error'));
           return;
         }
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: prev.length + 1,
-            type: 'agent',
-            text: message,
-            created_at: new Date().toISOString(),
-          },
-        ]);
+
         setMessage('');
       } catch (error) {
         alert('Failed to send reply to Zoho Desk.');
@@ -289,15 +153,12 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   const getChannelDisplay = () => {
     if (!ticketDetails) return '';
     
-    // Try to determine channel from available fields
-    const channel = ticketDetails.mode;
-    
+    const channel = ticketDetails.mode; 
     if (channel) {
       return ` • ${channel.charAt(0).toUpperCase() + channel.slice(1).toLowerCase()}`;
     } else {
       ''
     }
-    
     // Default to showing just the customer name if no channel can be determined
     return '';
   };
@@ -389,18 +250,18 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         )}
         </div>
 
-        {/* <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
+        <div className="flex-1 border-l border-gray-300 bg-gray-50 p-4">
           <AIResponsePanel
             chatMessages={messagesForThisTicket.map(msg => ({
               id: msg.id,
-              text: msg.content,
-              created_at: msg.created_at,
-              type: 'customer', // or logic for agent/customer
-              name: '',
+              text: msg.message || '',
+              created_at: msg.created_time,
+              type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
+              name: msg.author_name || '',
             }))}
             onSelectSuggestion={(s) => setMessage(s)}
           />
-        </div> */}
+        </div>
     </section>
   );
 } 

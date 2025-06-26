@@ -2,13 +2,6 @@ import { NextRequest } from 'next/server';
 import { supabase } from '../../../lib/supabase';
 import { TicketPayload, ThreadPayload } from './types';
 
-interface Event {
-  payload: any;
-  eventTime: string;
-  eventType: string;
-  orgId: string;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const eventArray = await request.json();
