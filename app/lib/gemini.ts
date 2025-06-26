@@ -25,8 +25,6 @@ Do not include explanations, intros, markdown formatting, or labels. Just list t
 
       // 
     const prompt = `
-${standardTrainingPrompt}
-
 Analyze the following customer service insights:
 ${customerServiceGuidelines}
 
