@@ -71,14 +71,14 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   return (
-    <section className="w-1/4 bg-white p-4 border-r border-gray-200 flex flex-col h-full">
+    <section className="w-1/4 bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 border-b-2 border-slate-100">
-        <h2 className="pb-2 text-2xl font-bold text-slate-800">Conversations</h2>
+      <div className="pr-4">
+        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
       </div>
 
       {/* Search and Filter Section */}
-      <div className="my-2 px-2 space-y-2">
+      <div className="my-2 pr-2 space-y-2">
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -137,7 +137,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             <li
               ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className={`p-3 mb-2 rounded-md cursor-pointer transition-colors ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-center">
