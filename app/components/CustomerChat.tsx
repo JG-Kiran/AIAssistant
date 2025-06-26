@@ -87,7 +87,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   // Autoscroll to bottom when chat opened (Using Zustand)
   useEffect(() => {
     if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      chatEndRef.current.scrollIntoView();
     }
   }, [messagesForThisTicket]);
 

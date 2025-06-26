@@ -1,134 +1,56 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase'
+import { useRealtimeStore } from '../stores/useRealtimeStore';
+
+const FilterIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+  </svg>
+);
+
+function useDebounce(value : string, delay : number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+      const handler = setTimeout(() => {
+          setDebouncedValue(value);
+      }, delay);
+      return () => {
+          clearTimeout(handler);
+      };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: string) => void }) {
-  const [searchText, setSearchText] = useState('');
-  const [searchType, setSearchType] = useState<'name' | 'reference'>('name');
-  const [modeFilter, setModeFilter] = useState<string>('all');
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const observer = useRef<IntersectionObserver>();
-  const ITEMS_PER_PAGE = 20;  
-  const [refreshKey, setRefreshKey] = useState(0);
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  // Get state and actions from the Zustand store
+  const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets } = useRealtimeStore();
+  // Debounce the search text to prevent excessive API calls
+  const debouncedSearchText = useDebounce(filters.searchText, 300);
 
+  // This single, unified useEffect handles both the initial data load AND all filter changes.
+  useEffect(() => {
+    const fetchWithFilters = async () => {
+        await fetchTickets(0);
+    }
+    fetchWithFilters();
+  }, [debouncedSearchText, filters.searchType, filters.modeFilter, fetchTickets]);
+
+  // IntersectionObserver for infinite scroll
+  const observer = useRef<IntersectionObserver>();
   const lastTicketElementRef = useCallback((node: HTMLLIElement | null) => {
-    if (loading) return;
+    if (!hasMoreTickets) return;
     if (observer.current) observer.current.disconnect();
     
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prevPage => prevPage + 1);
+    observer.current = new IntersectionObserver(async (entries) => {
+      if (entries[0].isIntersecting) {
+        await loadMoreTickets();
       }
     });
-    
     if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  const fetchTickets = async (pageNumber: number, searchText: string, searchType: 'name' | 'reference', modeFilter: string) => {
-    try {
-      setLoading(true);
-      const from = pageNumber * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      let query = supabase
-        .from('tickets')
-        .select('*', { count: 'exact' })
-        .range(from, to)
-        .order('modified_time', { ascending: false });
-
-      if (searchText.trim()) {
-        const column = searchType === 'name' ? 'contact_name' : 'ticket_reference_id';
-        query = query.ilike(column, `%${searchText}%`);  // case-insensitive search
-      }
-
-      if (modeFilter !== 'all') {
-        query = query.eq('mode', modeFilter);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Supabase error:', error.message);
-        return;
-      }
-
-      if (data) {
-        setTickets(prevTickets => 
-          pageNumber === 0 ? data : [...prevTickets, ...data]
-        );
-        setHasMore(data.length === ITEMS_PER_PAGE);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching tickets:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    setPage(0); // reset paging when search or filter changes
-    fetchTickets(0, searchText, searchType, modeFilter);
-  }, [searchText, searchType, modeFilter, refreshKey]);
-  
-  useEffect(() => {
-    if (page === 0 && (searchText || modeFilter !== 'all')) return; // already handled by above
-    fetchTickets(page, searchText, searchType, modeFilter);
-  }, [page]);
-
-  // The useEffect hook manages the real-time subscription
-  useEffect(() => {
-    //Define the channel for selected ticket
-    const channel = supabase.channel(`realtime-chat-tickets`);
-    console.log(`Startin realtime chat for ticket list`);
-
-    // Set up realtime subscription
-    const subscription = channel
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT', // Only listen for new messages
-          schema: 'public',
-          table: 'tickets',
-        },
-        (payload) => {
-          // This function runs every time a new ticket is inserted
-          console.log('New ticket received!', payload);
-          setRefreshKey((k) => k + 1);
-        }
-      )
-      .subscribe((status, err) => {
-        // This callback lets you know the status of the subscription.
-        
-        switch (status) {
-          case 'SUBSCRIBED':
-            console.log('✅ WebSocket connection for tickets successfully established!');
-            break;
-  
-          case 'TIMED_OUT':
-            console.error('Connection timed out. Retrying...');
-            break;
-  
-          case 'CHANNEL_ERROR':
-            console.error('A channel error occurred.', err);
-            break;
-            
-          case 'CLOSED':
-            console.log('WebSocket connection closed.');
-            break;
-        }
-      });
-    // Remove channel when component unmounts to prevent memory leaks
-    return () => {
-      console.log(`Closing channel`);
-      supabase.removeChannel(channel);
-    };
-
-  }, []);
+  }, [hasMoreTickets, loadMoreTickets]);
 
   const handleSelectTicket = (id: string) => {
     onSelectTicket(id);
@@ -150,43 +72,65 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
 
   return (
     <section className="w-1/4 bg-white p-4 border-r border-gray-200 flex flex-col h-full">
-      <h2 className="text-xl font-semibold mb-4 px-2">Conversations</h2>
-      <div className="mb-4 px-2 space-y-2">
-        <input
-          type="text"
-          placeholder={searchType === 'name' ? "Search by name..." : "Search by reference..."}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-        <div className="flex gap-2">
-          <div className="relative w-full">
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as 'name' | 'reference')}
-              className="w-full p-2 pl-3 pr-10 appearance-none border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer hover:border-gray-400 transition-colors"
-            >
-              <option value="name">Search by Name</option>
-              <option value="reference">Search by Reference</option>
-            </select>
+      {/* Header */}
+      <div className="px-4 border-b-2 border-slate-100">
+        <h2 className="pb-2 text-2xl font-bold text-slate-800">Conversations</h2>
+      </div>
+
+      {/* Search and Filter Section */}
+      <div className="my-2 px-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder={filters.searchType === 'name' ? "Search by name..." : "Search by reference..."}
+            className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            value={filters.searchText}
+            onChange={(e) => setFilters({ searchText: e.target.value })}
+          />
+          <button 
+            onClick={() => setIsFilterVisible(!isFilterVisible)}
+            className={`p-2 border rounded-md transition-colors ${isFilterVisible ? 'bg-blue-100 border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500 hover:bg-gray-100'}`}
+            aria-label="Toggle filters"
+          >
+            <FilterIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Collapsible Filter Options */}
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFilterVisible ? 'max-h-40 mt-2' : 'max-h-0'}`}> 
+          <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Search By</label>
+              <select
+                value={filters.searchType}
+                onChange={(e) => setFilters({ searchType: e.target.value as 'name' | 'reference' })}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="name">Contact Name</option>
+                <option value="reference">Ticket Reference</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Channel</label>
+              <select
+                value={filters.modeFilter}
+                onChange={(e) => setFilters({ modeFilter: e.target.value })}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="all">All Channels</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Email">Email</option>
+                <option value="MyStorage">MyStorage</option>
+                <option value="ZaloOA">Zalo</option>
+                <option value="Phone">Phone</option>
+                <option value="Web">Web Chat</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div className="relative w-full">
-          <select
-            value={modeFilter}
-            onChange={(e) => setModeFilter(e.target.value)}
-            className="w-full p-2 pl-3 pr-10 appearance-none border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer hover:border-gray-400 transition-colors"
-          >
-            <option value="all">All Channels</option>
-            <option value="Facebook">Facebook</option>
-            <option value="Email">Email</option>
-            <option value="MyStorage">MyStorage</option>
-            <option value="ZaloOA">Zalo</option>
-            <option value="Phone">Phone</option>
-            <option value="Web">Web Chat</option>
-          </select>
-        </div>
       </div>
+
+      {/* Ticket List */}
       <div className="overflow-y-auto flex-1">
         <ul>
           {tickets.map((ticket, index) => (
@@ -211,11 +155,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             </li>
           ))}
         </ul>
-        {loading && (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto"></div>
-          </div>
-        )}
       </div>
     </section>
   );
