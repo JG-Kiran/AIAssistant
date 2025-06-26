@@ -55,7 +55,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center justify-center">
           <h2 className="text-xl font-semibold mb-4">Or Login with Zoho</h2>
           <a
-            href="/dashboard" // Change to /api/auth/zoho/login later
+            href="/api/auth/zoho/login"
             className="bg-red-500 text-white px-6 py-2 rounded flex items-center gap-2"
           >
             <img src="/zoho-icon.svg" className="h-5 w-5" alt="Zoho" />
