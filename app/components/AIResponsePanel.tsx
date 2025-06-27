@@ -47,7 +47,7 @@ export default function AIResponsePanel({ chatMessages, onSelectSuggestion }: {
 
     try {
       const customPrompt = isCustomPrompt ? prompt : undefined;
-      const response = await fetch('/api/copilot/route', {
+      const response = await fetch('/api/copilot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
