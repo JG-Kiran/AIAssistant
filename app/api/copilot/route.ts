@@ -65,8 +65,11 @@ Do not include explanations, intros, markdown formatting, or labels.`;
       messages: messages, // This is the H2A message history from the `useChat` hook
     });
 
+    console.log(result);
+
     // 6. Respond with the stream
     return result.toDataStreamResponse();
+    
 
   } catch (error: any) {
     // Enhanced error logging to see what's happening
