@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@ai-sdk/google": "^1.2.19",
+    "@ai-sdk/react": "^1.2.12",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.50.0",
+    "ai": "^4.3.16",
     "dompurify": "^3.2.6",
     "html-to-text": "^9.0.5",
     "jsonwebtoken": "^9.0.2",

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { generateAIResponse } from '../lib/gemini';
 import type { ChatMessage } from './CustomerChat';
 
 const SparklesIcon = ({ className }: { className: string }) => (
@@ -48,8 +47,22 @@ export default function AIResponsePanel({ chatMessages, onSelectSuggestion }: {
 
     try {
       const customPrompt = isCustomPrompt ? prompt : undefined;
-      const aiText = await generateAIResponse(chatMessages.slice(-10), customPrompt); 
-      setGeneratedContent(aiText || '');
+      const response = await fetch('/api/copilot/route', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: chatMessages,
+          h2hConversation: chatMessages.map(msg => ({ role: msg.type, text: msg.text })),
+          customPrompt,
+        }),
+      });
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      setGeneratedContent(result.data || '');
     } catch (err) {
       console.error(err);
       setError('Something went wrong generating the response.');
