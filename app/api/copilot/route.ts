@@ -1,8 +1,8 @@
 // In: app/api/copilot/route.ts
 // This file REPLACES the functionality of lib/gemini.ts
 
-import { streamText } from 'ai';
-import { createGoogleGenerativeAI, google } from '@ai-sdk/google';
+import { generateText, CoreMessage } from 'ai';
+import { google } from '@ai-sdk/google';
 
 // 1. Import your prompts directly into the server-side API route
 import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is correct
@@ -56,19 +56,36 @@ Do not include explanations, intros, markdown formatting, or labels.`;
       ${finalInstruction}
       --- END OF TASK ---
     `;
+    let messagesForAI: CoreMessage[];
+
+    if (customPrompt) {
+      // If there IS a custom prompt, that is the user's message to the AI.
+      messagesForAI = [{ role: 'user', content: customPrompt }];
+    } else {
+      // If there is NO custom prompt (Quick Generate), we create a default instruction.
+      // This acts as the user's message, telling the AI what to do.
+      messagesForAI = [
+        {
+          role: 'user',
+          content: 'Based on the H2H conversation provided in the system prompt, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
+        }
+      ];
+    }
 
     // 5. Call the Vercel AI SDK's `streamText` function
-    const result = await streamText({
+    const { text } = await generateText({
       // The API Key is read automatically from environment variables (GOOGLE_GENERATIVE_AI_API_KEY)
       model: google('models/gemini-2.5-flash'),
       system: systemPrompt,
-      messages: messages, // This is the H2A message history from the `useChat` hook
+      messages: messagesForAI, // This is the H2A message history from the `useChat` hook
     });
 
-    console.log(result);
-
     // 6. Respond with the stream
-    return result.toDataStreamResponse();
+    //const { text } = await result.response;
+    return new Response(JSON.stringify({ data: text }), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    });
     
 
   } catch (error: any) {
