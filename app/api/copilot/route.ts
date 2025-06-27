@@ -2,11 +2,12 @@
 // This file REPLACES the functionality of lib/gemini.ts
 
 import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI, google } from '@ai-sdk/google';
 
 // 1. Import your prompts directly into the server-side API route
 import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is correct
 import { standardTrainingPrompt } from '@/lib/trainprompt'; // Assuming path is correct
+
 
 export const maxDuration = 30; // Optional: Allow longer serverless function execution
 
@@ -67,9 +68,13 @@ Do not include explanations, intros, markdown formatting, or labels.`;
     // 6. Respond with the stream
     return result.toDataStreamResponse();
 
-  } catch (error) {
-    console.error('Error in co-pilot API route:', error);
-    // You can send a more detailed error response if needed
-    return new Response(JSON.stringify({ error: 'Failed to generate AI response.' }), { status: 500 });
+  } catch (error: any) {
+    // Enhanced error logging to see what's happening
+    console.error('[AI_API_ERROR] An error occurred:', error);
+    return new Response(JSON.stringify({ 
+      error: 'An internal server error occurred.',
+      // Optionally include more detail during development
+      errorMessage: error.message 
+    }), { status: 500 });
   }
 }
