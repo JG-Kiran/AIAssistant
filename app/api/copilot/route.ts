@@ -1,7 +1,7 @@
 // In: app/api/copilot/route.ts
 // This file REPLACES the functionality of lib/gemini.ts
 
-import { generateText, CoreMessage } from 'ai';
+import { streamText, CoreMessage } from 'ai';
 import { google } from '@ai-sdk/google';
 
 // 1. Import your prompts directly into the server-side API route
@@ -16,12 +16,9 @@ export async function POST(req: Request) {
     // Extract data sent from the `useChat` hook on the frontend
     const { messages, h2hConversation, customPrompt } = await req.json();
 
-    // 2. Format the H2H chat history, just like in your old file
-    const chatContext = h2hConversation
-      .map((msg: { role: string; text: string }) => 
-        `${msg.role === 'agent' ? 'Agent' : 'Customer'}: ${msg.text}`
-      )
-      .join('\n');
+    // The H2H chat history is now a pre-formatted string from the frontend.
+    // No need to map/join it again. We can use it directly.
+    //const chatContext = h2hConversation;
 
     // 3. Dynamically create the final instruction, just like in your old file
     const finalInstruction = customPrompt
@@ -48,7 +45,7 @@ Do not include explanations, intros, markdown formatting, or labels.`;
 
       Now, review the entire Human-to-Human (H2H) conversation history provided below:
       --- H2H CONVERSATION START ---
-      ${chatContext}
+      ${h2hConversation}
       --- H2H CONVERSATION END ---
 
       Your final task is to act on the user's latest request.
@@ -56,24 +53,13 @@ Do not include explanations, intros, markdown formatting, or labels.`;
       ${finalInstruction}
       --- END OF TASK ---
     `;
-    let messagesForAI: CoreMessage[];
-
-    if (customPrompt) {
-      // If there IS a custom prompt, that is the user's message to the AI.
-      messagesForAI = [{ role: 'user', content: customPrompt }];
-    } else {
-      // If there is NO custom prompt (Quick Generate), we create a default instruction.
-      // This acts as the user's message, telling the AI what to do.
-      messagesForAI = [
-        {
-          role: 'user',
-          content: 'Based on the H2H conversation provided in the system prompt, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
-        }
-      ];
-    }
+    
+    // The `useChat` hook now sends the full history automatically.
+    // We just need to grab it. `messages` will be an array of `CoreMessage`.
+    const messagesForAI: CoreMessage[] = messages;
 
     // 5. Call the Vercel AI SDK's `streamText` function
-    const { text } = await generateText({
+    const result = await streamText({
       // The API Key is read automatically from environment variables (GOOGLE_GENERATIVE_AI_API_KEY)
       model: google('models/gemini-2.5-flash'),
       system: systemPrompt,
@@ -81,11 +67,7 @@ Do not include explanations, intros, markdown formatting, or labels.`;
     });
 
     // 6. Respond with the stream
-    //const { text } = await result.response;
-    return new Response(JSON.stringify({ data: text }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    return result.toDataStreamResponse();
     
 
   } catch (error: any) {

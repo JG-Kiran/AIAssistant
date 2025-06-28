@@ -6,6 +6,9 @@ import AIResponsePanel from './AIResponsePanel';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
 import ChatLog from './ChatLog'; // <-- Import new component
 import MessageInput from './MessageInput'; // <-- Import new component
+import { convert } from 'html-to-text';
+import { Message } from 'ai';
+import { saveH2AMessages } from '../lib/supabase';
 
 export interface ChatMessage {
   id: number;
@@ -25,30 +28,54 @@ export interface TicketDetails {
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
   const [message, setMessage] = useState('');
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
+  const [initialH2aMessages, setInitialH2aMessages] = useState<Message[]>([]);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   // Get the global store and the new action
   const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
 
   // This effect now fetches initial messages and puts them in the GLOBAL store
   useEffect(() => {
-    const fetchMessages = async () => {
+    const fetchAndSetData = async () => {
       if (!selectedTicketId) {
+        setInitialH2aMessages([]);
         return;
       }
-      const { data, error } = await supabase
+      
+      // 1. Fetch H2H messages (existing logic)
+      const { data: h2hData, error: h2hError } = await supabase
         .from('threads')
         .select('*')
         .eq('ticket_reference_id', selectedTicketId)
         .order('created_time', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching messages:', error);
-        return;
+      if (h2hError) {
+        console.error('Error fetching H2H messages:', h2hError);
+      } else {
+        setInitialThreadsForTicket(selectedTicketId, h2hData as Thread[]);
       }
-      // Call the store action to set the initial messages
-      setInitialThreadsForTicket(selectedTicketId, data as Thread[]);
+
+      // 2. Fetch H2A messages for the same ticket
+      const { data: h2aData, error: h2aError } = await supabase
+        .from('AI_chat_history')
+        .select('*')
+        .eq('ticket_reference_id', selectedTicketId)
+        .order('created_at', { ascending: true });
+
+      if (h2aError) {
+        console.error('Error fetching H2A messages:', h2aError);
+        setInitialH2aMessages([]); // Reset on error
+      } else {
+        // Ensure data is mapped correctly to the `Message` type
+        const aichatHistory: Message[] = (h2aData || []).map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          createdAt: new Date(msg.created_at),
+        }));
+        setInitialH2aMessages(aichatHistory);
+      }
     };
-    fetchMessages();
+    fetchAndSetData();
   }, [selectedTicketId, setInitialThreadsForTicket]);
 
   // Use useMemo to efficiently get the messages for the currently selected ticket.
@@ -90,6 +117,11 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       chatEndRef.current.scrollIntoView();
     }
   }, [messagesForThisTicket]);
+
+  const handleSaveConversation = (messages: Message[]) => {
+    if (!selectedTicketId) return;
+    saveH2AMessages(selectedTicketId, messages);
+  };
 
   // Define a dictionary to map ticket modes to channels
   const modeToChannelMap: { [key: string]: string } = {
@@ -133,6 +165,15 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     }
   };
 
+  const h2hContext = useMemo(() => {
+    return messagesForThisTicket
+        .map(msg => {
+            const author = (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'Agent' : 'Customer');
+            return `${author}: ${msg.message || ''}`;
+        })
+        .join('\n');
+  }, [messagesForThisTicket]);
+
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
         <div className="flex-[2] flex flex-col p-4">
@@ -166,13 +207,10 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         </div>
   
         <AIResponsePanel
-            chatMessages={messagesForThisTicket.map(msg => ({
-                id: msg.id,
-                text: msg.message || '',
-                created_at: msg.created_time,
-                type: (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer'),
-                name: msg.author_name || '',
-            }))}
+            h2hChatId={selectedTicketId}
+            h2hContext={h2hContext}
+            initialH2aMessages={initialH2aMessages}
+            onSaveConversation={handleSaveConversation}
             onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)}
         />
     </section>
