@@ -11,17 +11,27 @@ const SparklesIcon = ({ className }: { className: string }) => (
   </svg>
 );
 
+const TrashIcon = ({ className }: { className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+);
+
 export default function AIResponsePanel({
   h2hChatId,
   h2hContext,
   initialH2aMessages,
   onSaveConversation,
+  onClearChat,
+  onDeleteMessage,
   onSelectSuggestion,
 }: {
   h2hChatId: string | null;
   h2hContext: string;
   initialH2aMessages: Message[];
   onSaveConversation: (messages: Message[]) => void;
+  onClearChat: () => void;
+  onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
   const {
@@ -79,23 +89,41 @@ export default function AIResponsePanel({
 
   return (
     <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-      <h3 className="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2"><SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+        </h3>
+        {messages.length > 0 && (
+            <button onClick={onClearChat} title="Clear chat history" className="p-1 text-slate-400 hover:text-red-500 transition-colors">
+                <TrashIcon className="h-5 w-5" />
+            </button>
+        )}
+      </div>
     
       {/* --- Response Area (Now a chat log) --- */}
       <div className="flex-grow overflow-y-auto pr-1 mb-4">
         <div className="flex flex-col gap-3">
           {messages.map(m => (
-            <div key={m.id} className={`p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm ${
-              m.role === 'user' 
-                ? 'bg-blue-100 text-blue-900 self-end'
-                : 'bg-white border border-slate-200 text-slate-800 self-start'
-            }`}>
-              {m.content}
-              {m.role === 'assistant' && (
-                  <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
-                      Use this Reply
-                  </button>
-              )}
+            <div key={m.id} className="group relative p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm">
+                <div className={`${
+                    m.role === 'user' 
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'bg-white border border-slate-200 text-slate-800'
+                } p-3.5 rounded-lg`}>
+                    {m.content}
+                    {m.role === 'assistant' && (
+                        <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
+                            Use this Reply
+                        </button>
+                    )}
+                </div>
+                <button 
+                    onClick={() => onDeleteMessage(m.id)} 
+                    title="Delete message"
+                    className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                >
+                    <TrashIcon className="h-4 w-4" />
+                </button>
             </div>
           ))}
         </div>

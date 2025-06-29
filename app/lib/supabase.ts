@@ -40,3 +40,31 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
       console.error('Error upserting H2A messages:', error);
     }
   }
+
+// --- FUNCTION TO CLEAR H2A CHAT HISTORY ---
+export async function clearH2aChatHistory(ticketId: string) {
+  const { error } = await supabase
+    .from('AI_chat_history')
+    .delete()
+    .eq('ticket_reference_id', ticketId);
+
+  if (error) {
+    console.error('Error clearing H2A chat history:', error);
+    return false;
+  }
+  return true;
+}
+
+// --- FUNCTION TO DELETE A SINGLE H2A MESSAGE ---
+export async function deleteH2aMessage(messageId: string) {
+  const { error } = await supabase
+    .from('AI_chat_history')
+    .delete()
+    .eq('id', messageId);
+
+  if (error) {
+    console.error('Error deleting H2A message:', error);
+    return false;
+  }
+  return true;
+}

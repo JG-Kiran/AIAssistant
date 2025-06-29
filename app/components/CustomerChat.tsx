@@ -8,7 +8,7 @@ import ChatLog from './ChatLog'; // <-- Import new component
 import MessageInput from './MessageInput'; // <-- Import new component
 import { convert } from 'html-to-text';
 import { Message } from 'ai';
-import { saveH2AMessages } from '../lib/supabase';
+import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage } from '../lib/supabase';
 
 export interface ChatMessage {
   id: number;
@@ -123,6 +123,21 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     saveH2AMessages(selectedTicketId, messages);
   };
 
+  const handleClearChat = async () => {
+    if (!selectedTicketId) return;
+    const success = await clearH2aChatHistory(selectedTicketId);
+    if (success) {
+      setInitialH2aMessages([]); // Clear local state on success
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    const success = await deleteH2aMessage(messageId);
+    if (success) {
+      setInitialH2aMessages(prev => prev.filter(msg => msg.id !== messageId));
+    }
+  };
+
   // Define a dictionary to map ticket modes to channels
   const modeToChannelMap: { [key: string]: string } = {
     // Example entries, you can fill in the actual mappings
@@ -211,6 +226,8 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             h2hContext={h2hContext}
             initialH2aMessages={initialH2aMessages}
             onSaveConversation={handleSaveConversation}
+            onClearChat={handleClearChat}
+            onDeleteMessage={handleDeleteMessage}
             onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)}
         />
     </section>
