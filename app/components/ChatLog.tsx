@@ -54,7 +54,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
         const authorType = msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer';
         const prevAuthorType = prevMsg ? (prevMsg.author_type === 'AGENT' || prevMsg.direction === 'out' ? 'agent' : 'customer') : null;
         const isFirstInSequence = authorType !== prevAuthorType;
-        const plainText = convert(msg.message || '', { wordwrap: 130 });
+        const plainText = msg.message || '';
 
         // Render the message row
         chatElements.push(
