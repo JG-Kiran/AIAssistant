@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { generateAIResponse } from '../lib/gemini';
-import type { ChatMessage } from './CustomerChat';
+import { useChat } from '@ai-sdk/react';
+import type { Message } from 'ai';
+import { useState, useEffect, useRef } from 'react';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -11,104 +11,148 @@ const SparklesIcon = ({ className }: { className: string }) => (
   </svg>
 );
 
-const CopyIcon = ({ className }: { className: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-  </svg>
+const TrashIcon = ({ className }: { className: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
 );
 
-export default function AIResponsePanel({ chatMessages, onSelectSuggestion }: {
-    chatMessages: ChatMessage[];
-    onSelectSuggestion: (suggestion: string) => void;
-  }) {
-    const [prompt, setPrompt] = useState('');
-    const [generatedContent, setGeneratedContent] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [copied, setCopied] = useState(false);
-    const [isSingleReply, setIsSingleReply] = useState(false);
+export default function AIResponsePanel({
+  h2hChatId,
+  h2hContext,
+  initialH2aMessages,
+  onSaveConversation,
+  onClearChat,
+  onDeleteMessage,
+  onSelectSuggestion,
+}: {
+  h2hChatId: string | null;
+  h2hContext: string;
+  initialH2aMessages: Message[];
+  onSaveConversation: (messages: Message[]) => void;
+  onClearChat: () => void;
+  onDeleteMessage: (messageId: string) => void;
+  onSelectSuggestion: (suggestion: string) => void;
+}) {
+  const {
+    messages,
+    input,
+    setInput,
+    handleSubmit,
+    append,
+    isLoading,
+    error,
+    setMessages,
+  } = useChat({
+    api: '/api/copilot',
+    id: h2hChatId || undefined,
+    initialMessages: initialH2aMessages,
+  });
 
-  // Clear suggestions when chat messages change
+  // --- Logic to save conversation on completion ---
+  const prevIsLoadingRef = useRef<boolean>(false);
+
   useEffect(() => {
-    setPrompt('');
-    setGeneratedContent('');
-    setError('');
-  }, [chatMessages]);
-
-  const handleGeneration = async (isCustomPrompt: boolean) => {
-    if (isCustomPrompt && !prompt.trim()) {
-      setError('Please enter a prompt to generate a reply.');
-      return;
+    // Check if loading has just finished
+    if (prevIsLoadingRef.current && !isLoading) {
+      // Ensure there's something to save
+      if (messages.length > 0) {
+        onSaveConversation(messages);
+      }
     }
+    // Update the ref to the current loading state for the next render
+    prevIsLoadingRef.current = isLoading;
+  }, [isLoading, messages, onSaveConversation]);
 
-    setLoading(true);
-    setError('');
-    setGeneratedContent('');
-    setIsSingleReply(isCustomPrompt);
-
-    try {
-      const customPrompt = isCustomPrompt ? prompt : undefined;
-      const aiText = await generateAIResponse(chatMessages.slice(-10), customPrompt); 
-      setGeneratedContent(aiText || '');
-    } catch (err) {
-      console.error(err);
-      setError('Something went wrong generating the response.');
-    } finally {
-      setLoading(false);
+  // Reset chat when switching conversations
+  useEffect(() => {
+    if (initialH2aMessages) {
+        setMessages(initialH2aMessages);
     }
+  }, [h2hChatId, initialH2aMessages, setMessages]);
+
+  const handleQuickGeneration = () => {
+    append({
+        role: 'user',
+        content: 'Based on the H2H conversation provided in the system prompt, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
+    }, {
+      body: { h2hConversation: h2hContext, customPrompt: undefined }
+    });
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const suggestions = !isSingleReply ? generatedContent.split('\n').filter(line => line.trim()) : [];
+  const handleCustomSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Pass extra body data to the API route
+    handleSubmit(e, {
+        body: { h2hConversation: h2hContext, customPrompt: input }
+    });
+  }
 
   return (
     <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-      <h3 className="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2"><SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant</h3>
+        <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+            <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+        </h3>
 
+        {messages.length > 0 && (
+            <button onClick={onClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
+                Clear Chat History
+            </button>
+        )}
+    
+      {/* --- Response Area (Now a chat log) --- */}
+      <div className="flex-grow overflow-y-auto pr-1 mb-4">
+        <div className="flex flex-col gap-3">
+          {messages.map(m => (
+            <div key={m.id} className="group relative p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm">
+                <div className={`${
+                    m.role === 'user' 
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'bg-white border border-slate-200 text-slate-800'
+                } p-3.5 rounded-lg`}>
+                    {m.content}
+                    {m.role === 'assistant' && (
+                        <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
+                            Use this Reply
+                        </button>
+                    )}
+                </div>
+                <button 
+                    onClick={() => onDeleteMessage(m.id)} 
+                    title="Delete message"
+                    className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                >
+                    <TrashIcon className="h-4 w-4" />
+                </button>
+            </div>
+          ))}
+        </div>
+        {isLoading && <div className="text-center p-4">Analysing Conversation...</div>}
+      </div>
+
+      <div className="border-t my-4 border-slate-200"></div>
+
+      {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
+      
       {/* --- Quick Suggestions --- */}
-      <button onClick={() => handleGeneration(false)} disabled={loading} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
-        {loading && !isSingleReply ? 'Generating...' : 'Generate Quick Suggestions'}
+      <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+        {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
       </button>
 
       {/* --- Custom Prompt Input --- */}
-      <div className="mb-2">
+      <form onSubmit={handleCustomSubmit}>
         <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
-        <textarea id="ai-prompt" rows={3} className="w-full p-2 border border-slate-300 rounded-lg" placeholder="e.g., Politely decline their request..." value={prompt} onChange={(e) => setPrompt(e.target.value)} />
-      </div>
-      <button onClick={() => handleGeneration(true)} disabled={loading || !prompt.trim()} className="w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
-        {loading && isSingleReply ? 'Generating...' : 'Generate From Prompt'}
-      </button>
-      
-      <div className="border-t my-6 border-slate-200"></div>
-
-      {error && <p className="text-sm text-red-500 mb-4 text-center">{error}</p>}
-      
-      {/* --- Response Area --- */}
-      <div className="flex-grow overflow-y-auto pr-1">
-        {loading && <div className="text-center p-4">Loading...</div>}
-
-        {generatedContent && isSingleReply && (
-          <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm relative">
-            <p className="text-sm text-slate-800 whitespace-pre-wrap">{generatedContent}</p>
-            <button onClick={() => onSelectSuggestion(generatedContent)} className="mt-4 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">Use this Reply</button>
-          </div>
-        )}
-
-        {generatedContent && !isSingleReply && (
-          <ul className="flex flex-col gap-3">
-            {suggestions.map((s, i) => (
-              <li key={i} onClick={() => onSelectSuggestion(s)} className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-blue-400">
-                <p className="text-sm text-slate-700">{s}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+        <textarea 
+            id="ai-prompt" 
+            rows={3} 
+            className="w-full p-2 border border-slate-300 rounded-lg" 
+            placeholder="e.g., Politely decline their request..." 
+            value={input}
+            onChange={(e) => setInput(e.target.value)} 
+        />
+        <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
+          {isLoading ? 'Generating...' : 'Generate From Prompt'}
+        </button>
+      </form>
     </aside>
   );
 }
