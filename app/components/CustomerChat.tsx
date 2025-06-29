@@ -119,7 +119,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   }, [messagesForThisTicket]);
 
   const handleSaveConversation = (messages: Message[]) => {
-    console.log('[CustomerChat] handleSaveConversation called with ticketId:', selectedTicketId, 'and messages:', messages);
     if (!selectedTicketId) return;
     saveH2AMessages(selectedTicketId, messages);
   };

@@ -2,7 +2,7 @@
 
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -37,11 +37,22 @@ export default function AIResponsePanel({
     api: '/api/copilot',
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
-    onFinish: () => {
-        console.log('[AIResponsePanel] onFinish triggered. Saving messages:', messages);
-        onSaveConversation(messages);
-    },
   });
+
+  // --- Logic to save conversation on completion ---
+  const prevIsLoadingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    // Check if loading has just finished
+    if (prevIsLoadingRef.current && !isLoading) {
+      // Ensure there's something to save
+      if (messages.length > 0) {
+        onSaveConversation(messages);
+      }
+    }
+    // Update the ref to the current loading state for the next render
+    prevIsLoadingRef.current = isLoading;
+  }, [isLoading, messages, onSaveConversation]);
 
   // Reset chat when switching conversations
   useEffect(() => {
