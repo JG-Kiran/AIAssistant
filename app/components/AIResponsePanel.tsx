@@ -126,7 +126,7 @@ export default function AIResponsePanel({
             </div>
           ))}
         </div>
-        {isLoading && <div className="text-center p-4">Loading...</div>}
+        {isLoading && <div className="text-center p-4">Analysing Conversation...</div>}
       </div>
 
       <div className="border-t my-4 border-slate-200"></div>
