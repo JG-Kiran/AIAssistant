@@ -89,16 +89,9 @@ export default function AIResponsePanel({
 
   return (
     <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+        <h3 className="text-xl font-bold mb-4 text-slate-800 flex items-center gap-2">
             <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
         </h3>
-        {messages.length > 0 && (
-            <button onClick={onClearChat} title="Clear chat history" className="p-1 text-slate-400 hover:text-red-500 transition-colors">
-                <TrashIcon className="h-5 w-5" />
-            </button>
-        )}
-      </div>
     
       {/* --- Response Area (Now a chat log) --- */}
       <div className="flex-grow overflow-y-auto pr-1 mb-4">
@@ -154,6 +147,12 @@ export default function AIResponsePanel({
           {isLoading ? 'Generating...' : 'Generate From Prompt'}
         </button>
       </form>
+
+      {messages.length > 0 && (
+          <button onClick={onClearChat} className="mt-4 w-full text-center py-2 text-sm text-slate-500 hover:bg-slate-200 rounded-lg transition">
+              Clear Chat History
+          </button>
+      )}
     </aside>
   );
 }
