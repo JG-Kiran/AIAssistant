@@ -38,6 +38,7 @@ export default function AIResponsePanel({
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
     onFinish: () => {
+        console.log('[AIResponsePanel] onFinish triggered. Saving messages:', messages);
         onSaveConversation(messages);
     },
   });
