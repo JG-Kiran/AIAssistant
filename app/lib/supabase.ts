@@ -13,18 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function saveH2AMessages(ticketId: string, messages: Message[]) {
     if (!ticketId || messages.length === 0) return;
   
-    // First, remove the old conversation for this ticket to prevent duplicates.
-    // This ensures the saved history always matches the final state of the chat.
-    const { error: deleteError } = await supabase
-      .from('AI_chat_history') // Your H2A messages table
-      .delete()
-      .eq('ticket_reference_id', ticketId);
-  
-    if (deleteError) {
-      console.error('Error clearing old H2A messages:', deleteError);
-      return; // Stop if we can't clear the old messages
-    }
-  
     // Next, prepare the new messages to be inserted.
     // We add the ticketId to each message so we know which conversation it belongs to.
     const messagesToSave = messages.map(msg => ({
@@ -35,12 +23,18 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
       ticket_reference_id: ticketId,
     }));
   
-    // Finally, insert the full, updated conversation history.
-    const { error: insertError } = await supabase
+    // Perform an "upsert" operation.
+    // - It will try to insert the rows.
+    // - If a row with a matching `id` already exists (based on the `onConflict`),
+    //   it will UPDATE the `content` and `role` instead of trying to insert a duplicate.
+    // This is crucial for handling streaming messages that get updated in place.
+    const { error } = await supabase
       .from('AI_chat_history')
-      .insert(messagesToSave);
+      .upsert(messagesToSave, {
+        onConflict: 'id', // The column that determines a conflict
+      });
   
-    if (insertError) {
-      console.error('Error inserting new H2A messages:', insertError);
+    if (error) {
+      console.error('Error upserting H2A messages:', error);
     }
   }

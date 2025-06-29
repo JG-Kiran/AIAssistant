@@ -37,9 +37,8 @@ export default function AIResponsePanel({
     api: '/api/copilot',
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
-    onFinish: (message) => {
-        const fullHistory = [...messages, message];
-        onSaveConversation(fullHistory);
+    onFinish: () => {
+        onSaveConversation(messages);
     },
   });
 
