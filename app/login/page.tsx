@@ -93,7 +93,7 @@ export default function LoginPage() {
           
           {/* Zoho Login */}
           <a
-            href="/dashboard" // Change to /api/auth/zoho/login later
+            href="/api/auth/zoho/login"
             className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
           >
             <ZohoIcon />
