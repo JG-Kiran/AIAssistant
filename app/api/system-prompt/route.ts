@@ -16,13 +16,13 @@ export async function GET() {
     if (error || !data) {
       // If no prompt is found or there's an error, return a default prompt.
       console.warn('No system prompt found in DB, returning default.');
-      return NextResponse.json({ prompt: defaultPrompt });
+      return new Response(defaultPrompt);
     }
 
-    return NextResponse.json({ prompt: data.prompt_text });
+    return new Response(data.prompt_text);
   } catch (err) {
     console.error('Error fetching system prompt:', err);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return new Response('Internal Server Error', { status: 500 });
   }
 }
 

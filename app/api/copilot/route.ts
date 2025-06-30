@@ -30,9 +30,9 @@ export async function POST(req: Request) {
 
     // 1a. Fetch the user-defined system prompt from our new endpoint.
     // This requires the full URL for server-to-server fetch.
-    const baseUrl = "https://ai-assistant-git-knowledge-base-jg-kirans-projects.vercel.app/";
+    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
     const promptResponse = await fetch(`${baseUrl}/api/system-prompt`);
-    const { prompt: customSystemPrompt } = await promptResponse.json();
+    const customSystemPrompt = await promptResponse.text();
 
 
     // 2. Combine all static context into one large block for the Triage Agent.
