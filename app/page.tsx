@@ -1,22 +1,29 @@
 'use client'
 
-import { useState } from "react";
-import { redirect } from 'next/navigation';
-
-import SidebarPrimary from "./components/ProfileBar";
-import TicketList from "./components/TicketList";
-import CustomerChat from "./components/CustomerChat";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from './lib/supabase';
 
 export default function Home() {
-  redirect('/login');
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  
+  useEffect(() => {
+    const checkSessionAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
+    };
+    checkSessionAndRedirect();
+  }, [router]);
+
   return (
-    <main className="flex flex-row h-screen w-screen">
-      <SidebarPrimary />
-      <TicketList onSelectTicket={setSelectedTicketId} />
-      <CustomerChat selectedTicketId={selectedTicketId} />
-    </main>
+    <div className="flex h-screen w-screen items-center justify-center">
+      <p>Loading...</p>
+    </div>
   );
 }
