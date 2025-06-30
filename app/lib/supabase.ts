@@ -17,6 +17,8 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
   
     // Next, prepare the new messages to be inserted.
     // We add the ticketId to each message so we know which conversation it belongs to.
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log(user);
     const messagesToSave = messages.map(msg => ({
       id: msg.id,
       role: msg.role,
