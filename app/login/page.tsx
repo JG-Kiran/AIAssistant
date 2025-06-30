@@ -93,8 +93,8 @@ export default function LoginPage() {
           
           {/* Zoho Login */}
           <a
-            href="/dashboard" // Change to /api/auth/zoho/login later
-            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
+            href="/api/auth/zoho/login"
+            className="bg-red-500 text-white px-6 py-2 rounded flex items-center gap-2"
           >
             <ZohoIcon />
             <span className="font-semibold">Log in with Zoho Desk</span>
