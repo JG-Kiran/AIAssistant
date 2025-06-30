@@ -72,6 +72,13 @@ export default function AIResponsePanel({
     // onFinish is no longer used for saving to prevent stale state issues.
   });
 
+  const handleDeleteMessage = (messageId: string) => {
+    // Optimistically update the UI by removing the message locally.
+    setMessages(currentMessages => currentMessages.filter(m => m.id !== messageId));
+    // Propagate the deletion to the parent component to handle the backend.
+    onDeleteMessage(messageId);
+  };
+
   // --- Logic to save conversation on completion ---
   const prevIsLoadingRef = useRef<boolean>(false);
 
@@ -147,7 +154,7 @@ export default function AIResponsePanel({
                             )}
                         </div>
                         <button 
-                            onClick={() => onDeleteMessage(m.id)} 
+                            onClick={() => handleDeleteMessage(m.id)} 
                             title="Delete message"
                             className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
                         >
