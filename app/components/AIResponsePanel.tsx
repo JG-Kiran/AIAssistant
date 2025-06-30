@@ -72,9 +72,12 @@ export default function AIResponsePanel({
     // onFinish is no longer used for saving to prevent stale state issues.
   });
 
+  const recentlyDeleted = useRef<string | null>(null);
+
   const handleDeleteMessage = (messageId: string) => {
     // Optimistically update the UI by removing the message locally.
     setMessages(currentMessages => currentMessages.filter(m => m.id !== messageId));
+    recentlyDeleted.current = messageId;
     // Propagate the deletion to the parent component to handle the backend.
     onDeleteMessage(messageId);
   };
@@ -96,9 +99,19 @@ export default function AIResponsePanel({
 
   // Reset chat when switching conversations
   useEffect(() => {
+    // When the parent passes a new set of initial messages,
+    // we need to make sure we don't accidentally undo a recent optimistic deletion.
     if (initialH2aMessages) {
+      if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
+        // The parent's list still contains the message we just deleted.
+        // Filter it out on the client-side to maintain the optimistic update.
+        setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
+      } else {
         setMessages(initialH2aMessages);
+      }
     }
+    // Clear the ref after handling.
+    recentlyDeleted.current = null;
   }, [h2hChatId, initialH2aMessages, setMessages]);
 
   const handleQuickGeneration = () => {
