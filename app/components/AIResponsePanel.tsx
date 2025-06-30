@@ -78,9 +78,9 @@ export default function AIResponsePanel({
     if (activeTab === 'prompt' && promptText === '') {
         setPromptStatus('loading');
         fetch('/api/system-prompt')
-            .then(res => res.json())
-            .then(data => {
-                setPromptText(data.prompt || '');
+            .then(res => res.text())
+            .then(text => {
+                setPromptText(text || '');
                 setPromptStatus('idle');
             })
             .catch(() => setPromptStatus('error'));
