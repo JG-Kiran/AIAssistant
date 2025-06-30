@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
-// import { getSession } from '../lib/session';
-// import { redirect } from 'next/navigation';
 
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
@@ -37,17 +35,6 @@ export default function DashboardPage() {
       subscription?.unsubscribe();
     };
   }, [router]);
-
-  // useEffect(() => {
-  //   const fetchSession = async () => {
-  //     const agentId = getSession();
-
-  //     if (!agentId) {
-  //       redirect('/login');
-  //     }
-  //   };
-  //   fetchSession();
-  // }, []);
 
   return (
     <main className="flex flex-row h-screen w-screen overflow-hidden bg-gray-50">  

@@ -34,7 +34,6 @@ export default function LoginPage() {
       setError(signInError.message);
     } else {
       // On successful login, Supabase client handles the session.
-      // We can now redirect to the dashboard.
       router.push('/dashboard');
     }
   };
