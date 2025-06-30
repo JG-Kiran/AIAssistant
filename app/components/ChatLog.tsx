@@ -54,7 +54,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
         const authorType = msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer';
         const prevAuthorType = prevMsg ? (prevMsg.author_type === 'AGENT' || prevMsg.direction === 'out' ? 'agent' : 'customer') : null;
         const isFirstInSequence = authorType !== prevAuthorType;
-        const plainText = convert(msg.message || '', { wordwrap: 130 });
+        const plainText = msg.message || '';
 
         // Render the message row
         chatElements.push(
@@ -65,7 +65,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
                     <>
                         <div className="w-8 shrink-0">{isFirstInSequence && <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-sm font-bold text-slate-600">{msg.author_name?.charAt(0).toUpperCase()}</div>}</div>
                         <div className="flex items-end gap-2">
-                            <div className="bg-white text-slate-800 rounded-xl p-3 shadow-sm max-w-md">
+                            <div className="bg-white text-slate-800 rounded-xl p-3 shadow-sm max-w-md break-words">
                                 {isFirstInSequence && <p className="font-bold text-sm text-slate-700 mb-1">{msg.author_name}</p>}
                                 <p className="text-base whitespace-pre-wrap">{plainText}</p>
                             </div>
@@ -78,7 +78,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
                 {authorType === 'agent' && (
                     <div className="flex-1 flex justify-end items-end gap-2">
                         <span className="text-xs text-slate-400 mb-1">{currentMessageDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <div className="bg-blue-600 text-white rounded-xl p-3 shadow-sm max-w-md">
+                        <div className="bg-blue-600 text-white rounded-xl p-3 shadow-sm max-w-md break-words">
                             {isFirstInSequence && <p className="font-bold text-sm text-blue-200 mb-1">{msg.author_name}</p>}
                             <p className="text-base whitespace-pre-wrap">{plainText}</p>
                         </div>

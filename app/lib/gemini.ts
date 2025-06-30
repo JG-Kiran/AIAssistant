@@ -25,8 +25,7 @@ Do not include explanations, intros, markdown formatting, or labels. Just list t
 
       // 
     const prompt = `
-Analyze the following customer service insights:
-${customerServiceGuidelines}
+Use this ${standardTrainingPrompt} as your first priority for instructions and knowledge base.
 
 Conversation History:
 ${chatContext}
