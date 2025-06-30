@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../lib/supabase';
 
 const ZohoIcon = () => (
   <svg className="h-5 w-5" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Zoho</title><path d="M5.334 2.459C3.154 3.561 2.01 5.918 2.01 8.35v3.132c0 .873.342 1.71.94 2.34.627.659 1.438 1.01 2.383 1.01h.001c.945 0 1.756-.351 2.383-1.01.6-.63.941-1.467.941-2.34V8.35c0-2.432-1.144-4.789-3.324-5.891zm2.383 11.252c-.22.23-.483.344-.794.344s-.574-.114-.794-.344c-.23-.23-.342-.505-.342-.794V8.35c0-.289.112-.564.342-.794.22-.23.484-.344.794-.344s.574.114.794.344c.23.23.342.505.342.794v4.564c0 .289-.112.564-.342.794zm10.283-8.811c-2.18-1.102-4.537-1.102-6.717 0V2.459c2.18-1.102 4.537-1.102 6.717 0zm-3.358 11.252c-.22.23-.483.344-.794.344s-.574-.114-.794-.344c-.23-.23-.342-.505-.342-.794V8.35c0-.289.112-.564.342-.794.22-.23.484-.344.794-.344s.574.114.794.344c.23.23.342.505.342.794v4.564c0 .289-.112.564-.342.794zM22 11.482v-3.132c0-2.432-1.144-4.789-3.324-5.891-2.18-1.102-4.537-1.102-6.717 0v2.441c2.18-1.102 4.537-1.102 6.717 0v3.132c0 .873.342 1.71.94 2.34.627.659 1.438 1.01 2.383 1.01s1.756-.351 2.383-1.01c.6-.63.941-1.467.941-2.34z" fill="currentColor"/></svg>
@@ -14,26 +15,26 @@ const SparklesIcon = ({ className }: { className: string }) => (
 );
 
 export default function LoginPage() {
-  const [agent, setAgent] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const res = await fetch('login/manual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agent }),
+    // Use Supabase's signInWithPassword
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      router.push('/dashboard');
+    if (signInError) {
+      setError(signInError.message);
     } else {
-      setError(data.error || 'Login failed. Please try again.');
+      // On successful login, Supabase client handles the session.
+      router.push('/dashboard');
     }
   };
 
@@ -59,20 +60,31 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-800">Welcome Back</h2>
+            <h2 className="text-2xl font-bold text-slate-800">Agent Login</h2>
             <p className="text-slate-500">Sign in to continue to the dashboard</p>
           </div>
           
-          {/* Email login */}
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
              <div>
-                <label htmlFor="agent-email" className="block text-sm font-medium text-slate-700 mb-1">Agent Email</label>
+                <label htmlFor="agent-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input
                   id="agent-email"
                   type="email"
                   placeholder="you@example.com"
-                  value={agent}
-                  onChange={(e) => setAgent(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  required
+                />
+             </div>
+             <div>
+                <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <input
+                  id="agent-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   required
                 />
@@ -81,24 +93,9 @@ export default function LoginPage() {
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
             <button type="submit" className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-blue-500/20">
-              Log In with Email
+              Log In
             </button>
           </form>
-
-          <div className="my-6 flex items-center">
-            <div className="flex-grow border-t border-slate-300"></div>
-            <span className="flex-shrink mx-4 text-slate-400">OR</span>
-            <div className="flex-grow border-t border-slate-300"></div>
-          </div>
-          
-          {/* Zoho Login */}
-          <a
-            href="/dashboard" // Change to /api/auth/zoho/login later
-            className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
-          >
-            <ZohoIcon />
-            <span className="font-semibold">Log in with Zoho Desk</span>
-          </a>
         </div>
       </div>
     </div>
