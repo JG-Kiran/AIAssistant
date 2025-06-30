@@ -84,8 +84,11 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     
     const rawMessages = threadsByTicketId.get(selectedTicketId) || [];
 
-    // Reverted: Return the messages as-is without parsing.
-    return rawMessages;
+    
+    return rawMessages.map(msg => ({
+      ...msg,
+      message: convert(msg.message || '', { wordwrap: 130}),
+    }));
   }, [threadsByTicketId, selectedTicketId]);
 
   useEffect(() => {
