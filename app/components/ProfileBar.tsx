@@ -2,14 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../lib/supabase';
 
 export default function ProfileBar() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
   const handleLogout = async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    router.push('/login');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error);
+    } else {
+      router.push('/login');
+    }
   };
 
   return (
