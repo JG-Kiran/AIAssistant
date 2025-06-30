@@ -147,7 +147,7 @@ export default function AIResponsePanel({
       
       {/* --- Conditionally Rendered Content --- */}
       {activeTab === 'chat' && (
-          <div className="flex flex-col flex-grow">
+          <div className="flex flex-col flex-grow min-h-0">
               <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
                   <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
               </h3>
@@ -158,7 +158,7 @@ export default function AIResponsePanel({
                   </button>
               )}
           
-              {/* --- Response Area (Now a chat log) --- */}
+              {/* --- Response Area (Wrapper for scrolling) --- */}
               <div className="flex-grow overflow-y-auto pr-1 mb-4">
                   <div className="flex flex-col gap-3">
                   {messages.map(m => (
@@ -192,26 +192,28 @@ export default function AIResponsePanel({
 
               {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
               
-              {/* --- Quick Suggestions --- */}
-              <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
-              {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
-              </button>
+              {/* --- Action Buttons (Footer) --- */}
+              <div className="mt-auto">
+                <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+                {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
+                </button>
 
-              {/* --- Custom Prompt Input --- */}
-              <form onSubmit={handleCustomSubmit}>
-              <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
-              <textarea 
-                  id="ai-prompt" 
-                  rows={3} 
-                  className="w-full p-2 border border-slate-300 rounded-lg" 
-                  placeholder="e.g., Politely decline their request..." 
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)} 
-              />
-              <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
-                  {isLoading ? 'Generating...' : 'Generate From Prompt'}
-              </button>
-              </form>
+                {/* --- Custom Prompt Input --- */}
+                <form onSubmit={handleCustomSubmit}>
+                <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
+                <textarea 
+                    id="ai-prompt" 
+                    rows={3} 
+                    className="w-full p-2 border border-slate-300 rounded-lg" 
+                    placeholder="e.g., Politely decline their request..." 
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)} 
+                />
+                <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
+                    {isLoading ? 'Generating...' : 'Generate From Prompt'}
+                </button>
+                </form>
+              </div>
           </div>
       )}
 
