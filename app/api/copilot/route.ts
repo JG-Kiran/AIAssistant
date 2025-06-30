@@ -4,14 +4,14 @@
 import { generateText, streamText, CoreMessage } from 'ai';
 import { google } from '@ai-sdk/google';
 
-// 1. Import your prompts directly into the server-side API route
+// 1. We still need the service guidelines, but the main prompt is now fetched dynamically.
 import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is correct
-import { standardTrainingPrompt } from '@/lib/trainprompt'; // Assuming path is correct
+// We no longer import standardTrainingPrompt
 
 const triageSystemPrompt = `
 You are a context analysis expert. Your sole job is to identify the most relevant information for a customer service agent.
 The user will provide you with three pieces of information:
-1. The full set of immutable "Company Rules".
+1. The full set of editable "System Prompt".
 2. The full set of immutable "Service Tips".
 3. The latest "Human-to-Human (H2H) Conversation".
 
@@ -25,14 +25,21 @@ export async function POST(req: Request) {
   try {
     // === STAGE 1: TRIAGE CALL (Get Relevant Context) ===
 
-    // 1. Receive the request from the frontend (same as now)
+    // 1. Receive the request from the frontend
     const { messages, h2hConversation, customPrompt } = await req.json();
+
+    // 1a. Fetch the user-defined system prompt from our new endpoint.
+    // This requires the full URL for server-to-server fetch.
+    const baseUrl = "https://ai-assistant-git-knowledge-base-jg-kirans-projects.vercel.app/";
+    const promptResponse = await fetch(`${baseUrl}/api/system-prompt`);
+    const { prompt: customSystemPrompt } = await promptResponse.json();
+
 
     // 2. Combine all static context into one large block for the Triage Agent.
     const fullContextForTriage = `
-    --- COMPANY RULES START ---
-    ${standardTrainingPrompt}
-    --- COMPANY RULES END ---
+    --- EDITABLE SYSTEM PROMPT START ---
+    ${customSystemPrompt}
+    --- EDITABLE SYSTEM PROMPT END ---
 
     --- SERVICE TIPS START ---
     ${customerServiceGuidelines}
