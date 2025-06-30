@@ -7,6 +7,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export async function getUser() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error('Error fetching user:', error);
+    return null;
+  }
+  return user;
+}
 
 // --- FUNCTION TO SAVE H2A MESSAGES ---
 // This function contains the actual database logic.
@@ -15,17 +23,30 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
       return;
     }
   
-    // Next, prepare the new messages to be inserted.
-    // We add the ticketId to each message so we know which conversation it belongs to.
+    // Get agent name
     const { data: { user } } = await supabase.auth.getUser();
+    let agentName: string | null = null;
+    if (user?.email) {
+      const { data: agentData, error: agentError } = await supabase
+        .from('agents')
+        .select('name')
+        .eq('emailId', user.email)
+        .single();
+      
+      if (agentError) {
+        console.error('Error fetching agent name:', agentError);
+      } else if (agentData) {
+        agentName = agentData.name;
+      }
+    }
     
-    //console.log(user);
     const messagesToSave = messages.map(msg => ({
       id: msg.id,
       role: msg.role,
       content: msg.content,
       created_at: msg.createdAt,
       ticket_reference_id: ticketId,
+      sent_by: msg.role === 'user' ? agentName : 'AI',
     }));
   
     // Perform an "upsert" operation.
@@ -43,22 +64,6 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
       console.error('Error upserting H2A messages:', error);
     }
 
-    if (user) {
-      // Query the 'agents' table to find the name associated with the user's email
-      const { data: agentData, error: agentError } = await supabase
-        .from('agents')
-        .select('name')
-        .eq('emailId', user.email)
-        .single();
-
-      if (agentError) {
-        console.error('Error fetching agent name:', agentError);
-      } else {
-        console.log('Agent name:', agentData.name);
-      }
-    } else {
-      console.error('User is null, cannot fetch agent name.');
-    }
   }
 
 // --- FUNCTION TO CLEAR H2A CHAT HISTORY ---

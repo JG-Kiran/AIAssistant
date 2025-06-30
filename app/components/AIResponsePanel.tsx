@@ -3,6 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
+import { getUser, supabase } from '../lib/supabase';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -34,6 +35,27 @@ export default function AIResponsePanel({
   onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
+  const [agentName, setAgentName] = useState<string>('You');
+  useEffect(() => {
+    const fetchAgentName = async () => {
+      const user = await getUser();
+      if (user?.email) {
+        const { data, error } = await supabase
+          .from('agents')
+          .select('name')
+          .eq('emailId', user.email)
+          .single();
+
+        if (error) {
+          console.error('Error fetching agent name:', error.message);
+        } else if (data) {
+          setAgentName(data.name);
+        }
+      }
+    };
+    fetchAgentName();
+  }, []);
+
   const {
     messages,
     input,
@@ -111,6 +133,12 @@ export default function AIResponsePanel({
                                 ? 'bg-blue-100 text-blue-900'
                                 : 'bg-white border border-slate-200 text-slate-800'
                         } p-3.5 rounded-lg`}>
+                            {m.role === 'user' && (
+                              <div className="font-bold text-slate-700 mb-1">{(m as any).sent_by || agentName}</div>
+                            )}
+                            {m.role === 'assistant' && (
+                              <div className="font-bold text-slate-700 mb-1">AI Assistant</div>
+                            )}
                             {m.content}
                             {m.role === 'assistant' && (
                                 <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
