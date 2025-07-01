@@ -4,6 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
+import { getUser, supabase } from '../lib/supabase';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -93,7 +94,25 @@ export default function AIResponsePanel({
         } else {
             setMessages(initialH2aMessages);
         }
+    const hasChatChanged = prevH2hChatIdRef.current !== h2hChatId;
+
+    // This condition is the key. We only sync with the parent's state if:
+    // 1. The chat conversation has actually changed.
+    // OR
+    // 2. The list of messages from the parent is not empty.
+    if (hasChatChanged || (initialH2aMessages && initialH2aMessages.length > 0)) {
+        if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
+            setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
+        } else {
+            setMessages(initialH2aMessages);
+        }
     }
+    // If the chat has NOT changed and the initial messages are empty, we do nothing,
+    // thus ignoring the temporary loading state from the parent.
+
+    // Update refs for the next render cycle.
+    prevH2hChatIdRef.current = h2hChatId;
+    recentlyDeleted.current = null;
     // If the chat has NOT changed and the initial messages are empty, we do nothing,
     // thus ignoring the temporary loading state from the parent.
 
@@ -124,7 +143,52 @@ export default function AIResponsePanel({
             <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
                 <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
             </h3>
+        <div className="flex flex-col flex-grow min-h-0">
+            <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+                <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+            </h3>
 
+            {messages.length > 0 && (
+                <button onClick={onClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
+                    Clear Chat History
+                </button>
+            )}
+        
+            {/* --- Response Area (Wrapper for scrolling) --- */}
+            <div className="flex-grow overflow-y-auto pr-1 mb-4">
+                <div className="flex flex-col gap-3">
+                {messages.map(m => (
+                    <div key={m.id} className="group relative p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm">
+                        <div className={`${
+                            m.role === 'user' 
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'bg-white border border-slate-200 text-slate-800'
+                        } p-3.5 rounded-lg`}>
+                            {m.role === 'user' && (
+                              <div className="font-bold text-slate-700 mb-1">{(m as any).sent_by || agentName}</div>
+                            )}
+                            {m.role === 'assistant' && (
+                              <div className="font-bold text-slate-700 mb-1">AI Assistant</div>
+                            )}
+                            {m.content}
+                            {m.role === 'assistant' && (
+                                <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
+                                    Use this Reply
+                                </button>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => handleDeleteMessage(m.id)} 
+                            title="Delete message"
+                            className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                ))}
+                </div>
+                {isLoading && <div className="text-center p-4">Loading...</div>}
+            </div>
             {messages.length > 0 && (
                 <button onClick={onClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
                     Clear Chat History
