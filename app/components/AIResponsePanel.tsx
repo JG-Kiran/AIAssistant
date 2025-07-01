@@ -94,8 +94,7 @@ export default function AIResponsePanel({
         } else {
             setMessages(initialH2aMessages);
         }
-    const hasChatChanged = prevH2hChatIdRef.current !== h2hChatId;
-
+      }
     // This condition is the key. We only sync with the parent's state if:
     // 1. The chat conversation has actually changed.
     // OR
@@ -139,10 +138,6 @@ export default function AIResponsePanel({
 
   return (
     <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-        <div className="flex flex-col flex-grow min-h-0">
-            <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
-                <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
-            </h3>
         <div className="flex flex-col flex-grow min-h-0">
             <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
                 <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
