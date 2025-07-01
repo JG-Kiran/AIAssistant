@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     const eventArray = await request.json();
 
+    console.log("incoming", eventArray);
     // Validate that the payload is an array.
     if (!Array.isArray(eventArray)) {
       console.error('❌ Expected an array of events, but received a different type.');
