@@ -4,9 +4,10 @@ import { TicketPayload, ThreadPayload } from './types';
 
 export async function POST(request: NextRequest) {
   try {
-    const eventArray = await request.json();
+    const rawPayload = await request.json();
 
-    console.log("incoming", eventArray);
+    const eventArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
+
     // Validate that the payload is an array.
     if (!Array.isArray(eventArray)) {
       console.error('❌ Expected an array of events, but received a different type.');
