@@ -121,12 +121,12 @@ export default function AIInstructionsPage() {
             </p>
             
             <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col flex-grow shadow-sm overflow-y-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 gap-6 mb-6">
                     {PROMPT_SECTIONS.map((section) => (
                         <div key={section.tag} className="flex flex-col">
                             <label 
                                 htmlFor={`section-${section.tag}`} 
-                                className="block text-sm font-semibold text-slate-700 mb-2 bg-slate-50 px-3 py-2 rounded-t-lg border border-b-0 border-slate-200"
+                                className="block text-lg font-bold text-slate-800 mb-2 bg-slate-50 px-4 py-3 rounded-t-lg border border-b-0 border-slate-200"
                             >
                                 {section.label}
                             </label>
