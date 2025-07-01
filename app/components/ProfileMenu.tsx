@@ -32,7 +32,14 @@ export function ProfileMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow">
+        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg py-1">
+          <button
+            onClick={() => {router.push('/dashboard/ai-instructions'); setOpen(false);}}
+            className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+          >
+            AI Instructions
+          </button>
+          <div className="border-t border-slate-100 my-1"></div>
           <button
             onClick={() => router.push('/profile')}
             className="block w-full text-left px-4 py-2 hover:bg-gray-100"
@@ -41,7 +48,7 @@ export function ProfileMenu() {
           </button>
           <button
             onClick={handleLogout}
-            className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100"
+            className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-slate-100"
           >
             Logout
           </button>

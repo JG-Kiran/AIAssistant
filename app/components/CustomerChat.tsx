@@ -4,13 +4,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
-import ChatLog from './ChatLog'; // <-- Import new component
-import MessageInput from './MessageInput'; // <-- Import new component
+import ChatLog from './ChatLog';
+import MessageInput from './MessageInput';
 import { convert } from 'html-to-text';
 import { Message } from 'ai';
 import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage } from '../lib/supabase';
-// @ts-ignore
-import EmailReplyParser from 'email-reply-parser';
 
 export interface ChatMessage {
   id: number;
@@ -86,13 +84,11 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     
     const rawMessages = threadsByTicketId.get(selectedTicketId) || [];
 
-    // Clean up all messages by converting HTML to plain text.
-    // This ensures both the UI (ChatLog) and the AI context use clean data.
+    
     return rawMessages.map(msg => ({
-        ...msg,
-        message: convert(msg.message || '', { wordwrap: 130 }),
+      ...msg,
+      message: convert(msg.message || '', { wordwrap: 130 }),
     }));
-
   }, [threadsByTicketId, selectedTicketId]);
 
   useEffect(() => {

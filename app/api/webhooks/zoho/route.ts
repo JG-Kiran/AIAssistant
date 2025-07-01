@@ -2,10 +2,20 @@ import { NextRequest } from 'next/server';
 import { supabase } from '../../../lib/supabase';
 import { TicketPayload, ThreadPayload } from './types';
 
+const isEmptyObject = (obj: any) => {
+  return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const eventArray = await request.json();
+    const rawPayload = await request.json();
 
+    if (isEmptyObject(rawPayload)) {
+      console.log('✅ Received empty webhook test from Zoho. Responding with 200 OK.');
+      return new Response('Webhook test successful.', { status: 200 });
+    }
+
+    const eventArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
     // Validate that the payload is an array.
     if (!Array.isArray(eventArray)) {
       console.error('❌ Expected an array of events, but received a different type.');
@@ -15,6 +25,11 @@ export async function POST(request: NextRequest) {
 
     // Loop through each event object in the array.
     for (const event of eventArray) {
+      if (isEmptyObject(event)) {
+        console.log('Skipping empty event object within an array.');
+        continue;
+      }
+
       console.log('Received Zoho Webhook (Raw Event Object):', event); // Log the whole object
 
       const payload = event?.payload;
@@ -23,7 +38,7 @@ export async function POST(request: NextRequest) {
       // Add checks for common issues like null/undefined eventType
       if (!eventType) {
         console.error('❌ eventType is missing or null/undefined in the webhook payload.');
-        return new Response('eventType missing', { status: 400 });
+        continue;
       }
 
       // Ticket Thread Add
@@ -230,7 +245,67 @@ export async function POST(request: NextRequest) {
 
       if (eventType === 'Ticket_Update') {
         console.log('🔄 Ticket updated:', payload);
-        // Add ticket update logic here if needed
+        console.log('🔄 Ticket update received:', payload);
+
+        const ticketId = payload.id;
+
+        // We must have a ticket ID to know which record to update.
+        if (!ticketId) {
+          console.error('❌ Ticket_Update event received without a ticket ID. Skipping.');
+          continue; // Skip to the next event in the loop
+        }
+
+        // Create a dynamic object to hold only the fields present in the payload.
+        // This prevents us from overwriting existing data with null.
+        const ticketUpdate: { [key: string]: any } = {};
+
+        // Map all potential fields from the Zoho payload to your table schema.
+        if (payload.assignee || payload.assigneeId) {
+          if (payload.assignee && typeof payload.assignee === 'object') {
+            const assignee = payload.assignee as { firstName?: string; lastName?: string; id?: string };
+            ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
+            ticketUpdate.ticket_owner_id = assignee.id || payload.assigneeId;
+          } else {
+            ticketUpdate.ticket_owner_id = payload.assigneeId;
+          }
+        }
+
+        if (payload.modifiedTime) ticketUpdate.modified_time = payload.modifiedTime;
+        if (payload.modifiedBy) ticketUpdate.modified_by_id = payload.modifiedBy;
+        if (payload.status) ticketUpdate.status = payload.status;
+        if (payload.priority) ticketUpdate.priority = payload.priority;
+        if (payload.channel) ticketUpdate.mode = payload.channel;
+        if (payload.language) ticketUpdate.language = payload.language;
+        if (payload.dueDate) ticketUpdate.due_date = payload.dueDate;
+        if (payload.closedTime) ticketUpdate.ticket_closed_time = payload.closedTime;
+        if (typeof payload.isOverDue === 'boolean') ticketUpdate.is_overdue = payload.isOverDue;
+        if (typeof payload.isEscalated === 'boolean') ticketUpdate.is_escalated = payload.isEscalated;
+        if (payload.subject) ticketUpdate.subject = payload.subject;
+        if (payload.description) ticketUpdate.description = payload.description;
+        if (payload.resolution) ticketUpdate.resolution = payload.resolution;
+        if (payload.departmentId) ticketUpdate.department_id = payload.departmentId;
+        if (payload.productId) ticketUpdate.product_id = payload.productId;
+        if (payload.category) ticketUpdate.category = payload.category;
+        if (payload.subCategory) ticketUpdate.sub_category = payload.subCategory;
+        if (payload.classification) ticketUpdate.classification = payload.classification;
+        if (payload.teamId) ticketUpdate.team_id = payload.teamId;
+        if (payload.onholdTime) ticketUpdate.ticket_on_hold_time = payload.onholdTime;
+
+        // Check if there's anything to update.
+        if (Object.keys(ticketUpdate).length > 0) {
+          const { error: updateError } = await supabase
+              .from('tickets')
+              .update(ticketUpdate)
+              .eq('ticket_reference_id', ticketId);
+
+          if (updateError) {
+              console.error(`❌ Error updating ticket ${ticketId}:`, updateError);
+          } else {
+              console.log(`✅ Successfully updated ticket: ${ticketId}`);
+          }
+        } else {
+          console.log(`No relevant fields to update for ticket: ${ticketId}. Skipping.`);
+        }
       }
 
       if (eventType === 'Ticket_Deleted') {
@@ -240,6 +315,10 @@ export async function POST(request: NextRequest) {
     }
     return new Response('Webhook received', { status: 200 });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.log('✅ Received a request with a non-JSON body (likely a simple ping). Responding with 200 OK.');
+      return new Response('Webhook ping successful.', { status: 200 });
+    }
     console.error('❌ Error handling webhook:', error);
     return new Response('Error', { status: 500 });
   }

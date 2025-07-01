@@ -3,6 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
+import { getUser, supabase } from '../lib/supabase';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -34,6 +35,27 @@ export default function AIResponsePanel({
   onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
+  const [agentName, setAgentName] = useState<string>('You');
+  useEffect(() => {
+    const fetchAgentName = async () => {
+      const user = await getUser();
+      if (user?.email) {
+        const { data, error } = await supabase
+          .from('agents')
+          .select('name')
+          .eq('emailId', user.email)
+          .single();
+
+        if (error) {
+          console.error('Error fetching agent name:', error.message);
+        } else if (data) {
+          setAgentName(data.name);
+        }
+      }
+    };
+    fetchAgentName();
+  }, []);
+
   const {
     messages,
     input,
@@ -47,7 +69,19 @@ export default function AIResponsePanel({
     api: '/api/copilot',
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
+    // onFinish is no longer used for saving to prevent stale state issues.
   });
+
+  const recentlyDeleted = useRef<string | null>(null);
+  const prevH2hChatIdRef = useRef<string | null>(null);
+
+  const handleDeleteMessage = (messageId: string) => {
+    // Optimistically update the UI by removing the message locally.
+    setMessages(currentMessages => currentMessages.filter(m => m.id !== messageId));
+    recentlyDeleted.current = messageId;
+    // Propagate the deletion to the parent component to handle the backend.
+    onDeleteMessage(messageId);
+  };
 
   // --- Logic to save conversation on completion ---
   const prevIsLoadingRef = useRef<boolean>(false);
@@ -66,9 +100,25 @@ export default function AIResponsePanel({
 
   // Reset chat when switching conversations
   useEffect(() => {
-    if (initialH2aMessages) {
-        setMessages(initialH2aMessages);
+    const hasChatChanged = prevH2hChatIdRef.current !== h2hChatId;
+
+    // This condition is the key. We only sync with the parent's state if:
+    // 1. The chat conversation has actually changed.
+    // OR
+    // 2. The list of messages from the parent is not empty.
+    if (hasChatChanged || (initialH2aMessages && initialH2aMessages.length > 0)) {
+        if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
+            setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
+        } else {
+            setMessages(initialH2aMessages);
+        }
     }
+    // If the chat has NOT changed and the initial messages are empty, we do nothing,
+    // thus ignoring the temporary loading state from the parent.
+
+    // Update refs for the next render cycle.
+    prevH2hChatIdRef.current = h2hChatId;
+    recentlyDeleted.current = null;
   }, [h2hChatId, initialH2aMessages, setMessages]);
 
   const handleQuickGeneration = () => {
@@ -89,70 +139,80 @@ export default function AIResponsePanel({
 
   return (
     <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-        <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
-            <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
-        </h3>
+        <div className="flex flex-col flex-grow min-h-0">
+            <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+                <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+            </h3>
 
-        {messages.length > 0 && (
-            <button onClick={onClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
-                Clear Chat History
-            </button>
-        )}
-    
-      {/* --- Response Area (Now a chat log) --- */}
-      <div className="flex-grow overflow-y-auto pr-1 mb-4">
-        <div className="flex flex-col gap-3">
-          {messages.map(m => (
-            <div key={m.id} className="group relative p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm">
-                <div className={`${
-                    m.role === 'user' 
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'bg-white border border-slate-200 text-slate-800'
-                } p-3.5 rounded-lg`}>
-                    {m.content}
-                    {m.role === 'assistant' && (
-                        <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
-                            Use this Reply
-                        </button>
-                    )}
-                </div>
-                <button 
-                    onClick={() => onDeleteMessage(m.id)} 
-                    title="Delete message"
-                    className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
-                >
-                    <TrashIcon className="h-4 w-4" />
+            {messages.length > 0 && (
+                <button onClick={onClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
+                    Clear Chat History
                 </button>
+            )}
+        
+            {/* --- Response Area (Wrapper for scrolling) --- */}
+            <div className="flex-grow overflow-y-auto pr-1 mb-4">
+                <div className="flex flex-col gap-3">
+                {messages.map(m => (
+                    <div key={m.id} className="group relative p-3.5 rounded-lg shadow-sm whitespace-pre-wrap text-sm">
+                        <div className={`${
+                            m.role === 'user' 
+                                ? 'bg-blue-100 text-blue-900'
+                                : 'bg-white border border-slate-200 text-slate-800'
+                        } p-3.5 rounded-lg`}>
+                            {m.role === 'user' && (
+                              <div className="font-bold text-slate-700 mb-1">{(m as any).sent_by || agentName}</div>
+                            )}
+                            {m.role === 'assistant' && (
+                              <div className="font-bold text-slate-700 mb-1">AI Assistant</div>
+                            )}
+                            {m.content}
+                            {m.role === 'assistant' && (
+                                <button onClick={() => onSelectSuggestion(m.content)} className="mt-3 w-full text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
+                                    Use this Reply
+                                </button>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => handleDeleteMessage(m.id)} 
+                            title="Delete message"
+                            className="absolute top-1 right-1 p-1 bg-white/50 rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                        </button>
+                    </div>
+                ))}
+                </div>
+                {isLoading && <div className="text-center p-4">Loading...</div>}
             </div>
-          ))}
+
+            <div className="border-t my-4 border-slate-200"></div>
+
+            {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
+            
+            {/* --- Action Buttons (Footer) --- */}
+            <div className="mt-auto">
+              <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+              {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
+              </button>
+
+              {/* --- Custom Prompt Input --- */}
+              <form onSubmit={handleCustomSubmit}>
+              <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
+              <textarea 
+                  id="ai-prompt" 
+                  rows={3} 
+                  className="w-full p-2 border border-slate-300 rounded-lg" 
+                  placeholder="e.g., Politely decline their request..." 
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)} 
+              />
+              <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
+                  {isLoading ? 'Generating...' : 'Generate From Prompt'}
+              </button>
+              </form>
+            </div>
         </div>
-        {isLoading && <div className="text-center p-4">Analysing Conversation...</div>}
-      </div>
-
-      <div className="border-t my-4 border-slate-200"></div>
-
-      {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
-      
-      {/* --- Quick Suggestions --- */}
-      <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
-        {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
-      </button>
-
-      {/* --- Custom Prompt Input --- */}
-      <form onSubmit={handleCustomSubmit}>
-        <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
-        <textarea 
-            id="ai-prompt" 
-            rows={3} 
-            className="w-full p-2 border border-slate-300 rounded-lg" 
-            placeholder="e.g., Politely decline their request..." 
-            value={input}
-            onChange={(e) => setInput(e.target.value)} 
-        />
-        <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
-          {isLoading ? 'Generating...' : 'Generate From Prompt'}
-        </button>
-      </form>
     </aside>
   );
 }
