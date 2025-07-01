@@ -124,7 +124,7 @@ export default function AIResponsePanel({
   const handleQuickGeneration = () => {
     append({
         role: 'user',
-        content: 'Based on the H2H conversation provided in the system prompt, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
+        content: 'Based on the sales conversation provided, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
     }, {
       body: { h2hConversation: h2hContext, customPrompt: undefined }
     });
