@@ -2,12 +2,20 @@ import { NextRequest } from 'next/server';
 import { supabase } from '../../../lib/supabase';
 import { TicketPayload, ThreadPayload } from './types';
 
+const isEmptyObject = (obj: any) => {
+  return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rawPayload = await request.json();
 
-    const eventArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
+    if (isEmptyObject(rawPayload)) {
+      console.log('✅ Received empty webhook test from Zoho. Responding with 200 OK.');
+      return new Response('Webhook test successful.', { status: 200 });
+    }
 
+    const eventArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
     // Validate that the payload is an array.
     if (!Array.isArray(eventArray)) {
       console.error('❌ Expected an array of events, but received a different type.');
