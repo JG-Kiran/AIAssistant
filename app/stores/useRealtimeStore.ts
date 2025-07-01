@@ -25,6 +25,7 @@ export type TicketFilters = {
   searchText: string; 
   searchType: 'name' | 'reference'; 
   modeFilter: string; 
+  view: 'all' | 'my-tickets' | 'unassigned';
 };
 
 
@@ -54,6 +55,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     searchText: '',
     searchType: 'name',
     modeFilter: 'all',
+    view: 'all',
   },
   channel: null,
 
@@ -159,13 +161,23 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       .order('modified_time', { ascending: false })
       .range(from, to);
 
-    // Apply server-side search filter
+    // Apply view filter (All, My Tickets, Unassigned)
+    if (filters.view === 'my-tickets') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        query = query.eq('ticket_owner_id', user.id);
+      }
+    } else if (filters.view === 'unassigned') {
+      query = query.is('ticket_owner_id', null);
+    }
+
+    // Apply search filter
     if (filters.searchText.trim()) {
       const column = filters.searchType === 'name' ? 'contact_name' : 'ticket_reference_id';
       query = query.ilike(column, `%${filters.searchText.trim()}%`);
     }
 
-    // Apply server-side channel filter
+    // Apply channel filter
     if (filters.modeFilter !== 'all') {
       query = query.eq('mode', filters.modeFilter);
     }

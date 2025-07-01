@@ -4,6 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
 import { getUser, supabase } from '../lib/supabase';
+import { useSessionStore } from '../stores/useSessionStore';
 
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
@@ -35,26 +36,7 @@ export default function AIResponsePanel({
   onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
-  const [agentName, setAgentName] = useState<string>('You');
-  useEffect(() => {
-    const fetchAgentName = async () => {
-      const user = await getUser();
-      if (user?.email) {
-        const { data, error } = await supabase
-          .from('agents')
-          .select('name')
-          .eq('emailId', user.email)
-          .single();
-
-        if (error) {
-          console.error('Error fetching agent name:', error.message);
-        } else if (data) {
-          setAgentName(data.name);
-        }
-      }
-    };
-    fetchAgentName();
-  }, []);
+  const agentName = useSessionStore((state) => state.userName || 'Agent');
 
   const {
     messages,
@@ -69,7 +51,6 @@ export default function AIResponsePanel({
     api: '/api/copilot',
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
-    // onFinish is no longer used for saving to prevent stale state issues.
   });
 
   const recentlyDeleted = useRef<string | null>(null);
