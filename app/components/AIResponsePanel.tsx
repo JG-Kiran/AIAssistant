@@ -73,6 +73,7 @@ export default function AIResponsePanel({
   });
 
   const recentlyDeleted = useRef<string | null>(null);
+  const prevH2hChatIdRef = useRef<string | null>(null);
 
   const handleDeleteMessage = (messageId: string) => {
     // Optimistically update the UI by removing the message locally.
@@ -99,18 +100,24 @@ export default function AIResponsePanel({
 
   // Reset chat when switching conversations
   useEffect(() => {
-    // When the parent passes a new set of initial messages,
-    // we need to make sure we don't accidentally undo a recent optimistic deletion.
-    if (initialH2aMessages) {
-      if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
-        // The parent's list still contains the message we just deleted.
-        // Filter it out on the client-side to maintain the optimistic update.
-        setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
-      } else {
-        setMessages(initialH2aMessages);
-      }
+    const hasChatChanged = prevH2hChatIdRef.current !== h2hChatId;
+
+    // This condition is the key. We only sync with the parent's state if:
+    // 1. The chat conversation has actually changed.
+    // OR
+    // 2. The list of messages from the parent is not empty.
+    if (hasChatChanged || (initialH2aMessages && initialH2aMessages.length > 0)) {
+        if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
+            setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
+        } else {
+            setMessages(initialH2aMessages);
+        }
     }
-    // Clear the ref after handling.
+    // If the chat has NOT changed and the initial messages are empty, we do nothing,
+    // thus ignoring the temporary loading state from the parent.
+
+    // Update refs for the next render cycle.
+    prevH2hChatIdRef.current = h2hChatId;
     recentlyDeleted.current = null;
   }, [h2hChatId, initialH2aMessages, setMessages]);
 
