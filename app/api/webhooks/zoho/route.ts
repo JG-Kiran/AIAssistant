@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
 
     // Loop through each event object in the array.
     for (const event of eventArray) {
+      if (isEmptyObject(event)) {
+        console.log('Skipping empty event object within an array.');
+        continue;
+      }
+
       console.log('Received Zoho Webhook (Raw Event Object):', event); // Log the whole object
 
       const payload = event?.payload;
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
       // Add checks for common issues like null/undefined eventType
       if (!eventType) {
         console.error('❌ eventType is missing or null/undefined in the webhook payload.');
-        return new Response('eventType missing', { status: 400 });
+        continue;
       }
 
       // Ticket Thread Add
@@ -310,6 +315,10 @@ export async function POST(request: NextRequest) {
     }
     return new Response('Webhook received', { status: 200 });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      console.log('✅ Received a request with a non-JSON body (likely a simple ping). Responding with 200 OK.');
+      return new Response('Webhook ping successful.', { status: 200 });
+    }
     console.error('❌ Error handling webhook:', error);
     return new Response('Error', { status: 500 });
   }
