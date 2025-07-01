@@ -53,6 +53,15 @@ export default function ProfileBar() {
           <div className="space-y-2">
             <button
               onClick={() => {
+                router.push('/dashboard/ai-instructions');
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-colors"
+            >
+              AI Instructions
+            </button>
+            <button
+              onClick={() => {
                 router.push('/profile');
                 setIsOpen(false);
               }}
