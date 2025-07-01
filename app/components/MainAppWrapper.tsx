@@ -1,21 +1,22 @@
 'use client';
 
 import { useRealtimeStore } from '../stores/useRealtimeStore';
+import { useSessionStore } from '../stores/useSessionStore';
 import { useEffect } from 'react';
 
 export default function MainAppWrapper({ children }: { children: React.ReactNode }) {
-  // Get the initialize and close functions from our store
-  const { initialize, close } = useRealtimeStore();
+  const initializeRealtime = useRealtimeStore((state) => state.initialize);
+  const closeRealtime = useRealtimeStore((state) => state.close);
+  const initializeSession = useSessionStore((state) => state.initializeSession);
 
   useEffect(() => {
-    // Call initialize() when the app first loads
-    initialize();
+    initializeSession();
+    initializeRealtime();
 
-    // Return a cleanup function to close the connection when the app is closed
     return () => {
-      close();
+      closeRealtime();
     };
-  }, [initialize, close]);
+  }, [initializeSession, initializeRealtime, closeRealtime]);
 
   return <>{children}</>;
 }

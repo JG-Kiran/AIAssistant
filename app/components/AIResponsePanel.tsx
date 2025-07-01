@@ -3,7 +3,6 @@
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
-import { getUser, supabase } from '../lib/supabase';
 import { useSessionStore } from '../stores/useSessionStore';
 
 const SparklesIcon = ({ className }: { className: string }) => (
@@ -36,8 +35,9 @@ export default function AIResponsePanel({
   onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
-  const agentName = useSessionStore((state) => state.userName || 'Agent');
-
+  const agentProfile = useSessionStore((state) => state.agentProfile);
+  const agentName = agentProfile?.name || 'Agent';
+  
   const {
     messages,
     input,
