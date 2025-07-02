@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         code,
         client_id: process.env.ZOHO_CLIENT_ID!,
         client_secret: process.env.ZOHO_CLIENT_SECRET!,
-        redirect_uri: process.env.ZOHO_REDIRECT_URI!,
+        redirect_uri: 'https://ai-assistant-rouge.vercel.app//api/auth/zoho/callback',
         grant_type: 'authorization_code',
       }),
     });
