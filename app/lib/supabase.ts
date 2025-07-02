@@ -4,8 +4,6 @@ import type { Message } from 'ai';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
-
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function getUser() {
   const { data: { user }, error } = await supabase.auth.getUser();

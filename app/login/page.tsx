@@ -98,6 +98,18 @@ export default function LoginPage() {
               Log In
             </button>
           </form>
+          <div className="my-6 flex items-center">
+              <div className="flex-grow border-t border-slate-300"></div>
+              <span className="flex-shrink mx-4 text-slate-400">OR</span>
+              <div className="flex-grow border-t border-slate-300"></div>
+          </div>
+          <a
+              href="/api/auth/zoho/login"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
+          >
+              <ZohoIcon />
+              <span className="font-semibold">Log in with Zoho Desk</span>
+          </a>
         </div>
       </div>
     </div>
