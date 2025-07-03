@@ -22,27 +22,18 @@ Do not add any explanation, preamble, or apologies. Only return the raw text of 
 export const maxDuration = 30; // Optional: Allow longer serverless function execution
 
 export async function POST(req: Request) {
-  const requestStartTime = Date.now();
-  console.log('🚀 [COPILOT] Starting AI response generation...');
-  
   try {
     // === STAGE 1: TRIAGE CALL (Get Relevant Context) ===
 
     // 1. Receive the request from the frontend
     const { messages, h2hConversation, customPrompt } = await req.json();
-    console.log(`📝 [COPILOT] Request parsed after ${Date.now() - requestStartTime}ms`);
 
     // 1a. Fetch the user-defined system prompt from our new endpoint.
     // This requires the full URL for server-to-server fetch.
-    const promptFetchStartTime = Date.now();
-    console.log('🔍 [COPILOT] Fetching system prompt...');
-    
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
     const promptResponse = await fetch(`${baseUrl}/api/system-prompt`);
     const customSystemPrompt = await promptResponse.text();
-    
-    const promptFetchTime = Date.now() - promptFetchStartTime;
-    console.log(`✅ [COPILOT] System prompt fetched in ${promptFetchTime}ms`);
+
 
     // 2. Combine all static context into one large block for the Triage Agent.
     const fullContextForTriage = `
@@ -67,18 +58,12 @@ export async function POST(req: Request) {
     `;
 
     // 4. Make the FIRST, NON-STREAMING call to the fast model.
-    const triageStartTime = Date.now();
-    console.log('🔄 [COPILOT] Starting triage analysis with gemini-1.5-flash...');
-    
     const { text: relevantContext } = await generateText({
         model: google('models/gemini-1.5-flash'), // The fast, cheap model
         system: triageSystemPrompt,
         messages: [{ role: 'user', content: triageUserMessage }],
     });
 
-    const triageTime = Date.now() - triageStartTime;
-    console.log(`🎯 [COPILOT] Triage analysis completed in ${triageTime}ms`);
-    console.log(`📊 [COPILOT] Relevant context length: ${relevantContext.length} characters`);
 
     // === STAGE 2: EXPERT CALL (Generate User-Facing Reply) ===
 
@@ -110,34 +95,17 @@ Do not include explanations, intros, markdown formatting, or labels.`;
     `;
     
     // 7. Make the SECOND, STREAMING call to the AI.
-    const expertStartTime = Date.now();
-    console.log('🧠 [COPILOT] Starting expert response generation with gemini-2.5-flash...');
-    
     const result = await streamText({
       model: google('models/gemini-2.5-flash'),
       system: expertSystemPrompt,
       messages: messages, // This is the H2A message history from the `useChat` hook
     });
 
-    const expertSetupTime = Date.now() - expertStartTime;
-    const totalProcessingTime = Date.now() - requestStartTime;
-    
-    console.log(`🤖 [COPILOT] Expert response stream initiated in ${expertSetupTime}ms`);
-    console.log(`⏱️  [COPILOT] Total processing time: ${totalProcessingTime}ms`);
-    console.log(`📈 [COPILOT] Timing breakdown:`);
-    console.log(`   - Prompt fetch: ${promptFetchTime}ms (${(promptFetchTime/totalProcessingTime*100).toFixed(1)}%)`);
-    console.log(`   - Triage analysis: ${triageTime}ms (${(triageTime/totalProcessingTime*100).toFixed(1)}%)`);
-    console.log(`   - Expert setup: ${expertSetupTime}ms (${(expertSetupTime/totalProcessingTime*100).toFixed(1)}%)`);
-    console.log(`   - Other overhead: ${totalProcessingTime - promptFetchTime - triageTime - expertSetupTime}ms`);
-
     // 8. Respond with the stream
     return result.toDataStreamResponse();
     
 
   } catch (error: any) {
-    const totalErrorTime = Date.now() - requestStartTime;
-    console.error(`❌ [COPILOT] Error occurred after ${totalErrorTime}ms:`, error);
-    
     // Enhanced error logging to see what's happening
     console.error('[AI_API_ERROR] An error occurred:', error);
     return new Response(JSON.stringify({ 
