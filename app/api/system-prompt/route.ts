@@ -33,6 +33,7 @@ export async function GET() {
 // POST handler to save the system prompt
 export async function POST(req: Request) {
   try {
+    console.log(user);
     const { prompt } = await req.json();
 
     if (typeof prompt !== 'string') {
