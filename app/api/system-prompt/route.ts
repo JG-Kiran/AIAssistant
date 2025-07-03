@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       .upsert({ 
         id: 1, 
         prompt_text: prompt, 
-        edited_by: await getUserName(),
+        edited_by: user,
         edited_time: new Date().toISOString()
       }, { onConflict: 'id' });
 
