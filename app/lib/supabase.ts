@@ -16,6 +16,26 @@ export async function getUser() {
   return user;
 }
 
+export async function getUserName() {
+  // Get agent name
+  const { data: { user } } = await supabase.auth.getUser();
+  let agentName: string | null = null;
+  if (user?.email) {
+    const { data: agentData, error: agentError } = await supabase
+      .from('agents')
+      .select('name')
+      .eq('emailId', user.email)
+      .single();
+    
+    if (agentError) {
+      console.error('Error fetching agent name:', agentError);
+    } else if (agentData) {
+      agentName = agentData.name;
+    }
+  }
+  return agentName;
+}
+
 // --- FUNCTION TO SAVE H2A MESSAGES ---
 // This function contains the actual database logic.
 export async function saveH2AMessages(ticketId: string, messages: Message[]) {
@@ -24,21 +44,9 @@ export async function saveH2AMessages(ticketId: string, messages: Message[]) {
     }
   
     // Get agent name
-    const { data: { user } } = await supabase.auth.getUser();
     let agentName: string | null = null;
-    if (user?.email) {
-      const { data: agentData, error: agentError } = await supabase
-        .from('agents')
-        .select('name')
-        .eq('emailId', user.email)
-        .single();
-      
-      if (agentError) {
-        console.error('Error fetching agent name:', agentError);
-      } else if (agentData) {
-        agentName = agentData.name;
-      }
-    }
+    agentName = await getUserName();
+    
     
     const messagesToSave = messages.map(msg => ({
       id: msg.id,

@@ -24,6 +24,8 @@ const formatPromptForDisplay = (text: string): string => {
 
 export default function AIInstructionsPage() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [editedBy, setEditedBy] = useState<string | null>(null);
+    const [editedTime, setEditedTime] = useState<string | null>(null);
     const editorRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
 
@@ -33,12 +35,14 @@ export default function AIInstructionsPage() {
         fetch('/api/system-prompt')
             .then(res => {
                 if (!res.ok) throw new Error('Failed to fetch');
-                return res.text();
+                return res.json();
             })
-            .then(text => {
+            .then(data => {
                 if (editorRef.current) {
-                    editorRef.current.innerHTML = formatPromptForDisplay(text);
+                    editorRef.current.innerHTML = formatPromptForDisplay(data.prompt_text);
                 }
+                setEditedBy(data.edited_by);
+                setEditedTime(data.edited_time);
                 setStatus('idle');
             })
             .catch(() => setStatus('error'));
@@ -59,9 +63,22 @@ export default function AIInstructionsPage() {
             if (!response.ok) throw new Error('Failed to save');
             setStatus('success');
             setTimeout(() => setStatus('idle'), 2000); // Reset after 2s
+            
+            // Refresh the edited info after saving
+            const refreshResponse = await fetch('/api/system-prompt');
+            if (refreshResponse.ok) {
+                const data = await refreshResponse.json();
+                setEditedBy(data.edited_by);
+                setEditedTime(data.edited_time);
+            }
         } catch (err) {
             setStatus('error');
         }
+    };
+
+    const formatDateTime = (dateString: string | null) => {
+        if (!dateString) return 'Unknown';
+        return new Date(dateString).toLocaleString();
     };
 
     return (
@@ -79,9 +96,16 @@ export default function AIInstructionsPage() {
                 This page allows you to define the core system prompt for the AI assistant. This prompt sets the AI's personality, rules, and overall behavior.
             </p>
             <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col flex-grow shadow-sm">
-                <label htmlFor="system-prompt-editor" className="block text-sm font-medium text-slate-700 mb-1">
-                    Instructions
-                </label>
+                <div className="flex justify-between items-start mb-1">
+                    <label htmlFor="system-prompt-editor" className="block text-sm font-medium text-slate-700">
+                        Instructions
+                    </label>
+                    {(editedBy || editedTime) && (
+                        <div className="text-xs text-slate-500">
+                            Last edited by: <span className="font-medium">{editedBy || 'Unknown'}</span> on {formatDateTime(editedTime)}
+                        </div>
+                    )}
+                </div>
                 <div 
                     ref={editorRef}
                     id="system-prompt-editor"
