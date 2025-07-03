@@ -36,7 +36,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         await fetchTickets(0);
     }
     fetchWithFilters();
-  }, [debouncedSearchText, filters.searchType, filters.modeFilter, fetchTickets]);
+  }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.view, fetchTickets]);
 
   // IntersectionObserver for infinite scroll
   const observer = useRef<IntersectionObserver>();
@@ -75,6 +75,28 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
       {/* Header */}
       <div className="pr-4">
         <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
+      </div>
+
+      {/* --- Filter buttons --- */}
+      <div className="flex items-center space-x-2 my-3 pr-2">
+        <button
+          onClick={() => setFilters({ view: 'all' })}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          All Tickets
+        </button>
+        <button
+          onClick={() => setFilters({ view: 'my-tickets' })}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          My Tickets
+        </button>
+        <button
+          onClick={() => setFilters({ view: 'unassigned' })}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unassigned' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Unassigned
+        </button>
       </div>
 
       {/* Search and Filter Section */}
@@ -143,7 +165,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               <div className="flex items-center">
                 <div className="flex-1">
                   <h3 className={`font-medium ${selectedTicket === ticket.ticket_reference_id ? 'text-white' : 'text-gray-800'}`}>{ticket.contact_name}</h3>
-                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p>
+                  {/* <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p> */}
                   {ticket.mode && (
                     <p className={`text-xs px-2 py-1 mt-1 inline-block rounded-full ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-600'}`}>
                       {ticket.mode}

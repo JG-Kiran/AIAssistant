@@ -2,19 +2,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSessionStore } from '../stores/useSessionStore';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileBar() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
+  const agentProfile = useSessionStore((state) => state.agentProfile);
+  const userEmail = useSessionStore((state) => state.user?.email);
+  const clearSession = useSessionStore((state) => state.clearSession);
+
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error logging out:', error);
-    } else {
-      router.push('/login');
-    }
+    await supabase.auth.signOut();
+    clearSession(); 
+    router.push('/login');
   };
 
   return (
@@ -45,9 +47,9 @@ export default function ProfileBar() {
         <div className="p-4">
           <div className="text-center py-4 mb-4 border-b border-slate-200">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto flex items-center justify-center text-5xl font-bold text-white mb-3 ring-4 ring-white shadow-lg">
-                A
+              {agentProfile?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
-            <p className="font-semibold text-slate-800 text-lg">agent@mystorage.vn</p>
+            <p className="font-semibold text-slate-800 text-lg">{agentProfile?.name || userEmail || 'agent@email.com'}</p>
             <p className="text-sm text-slate-500">Support Agent</p>
           </div>
           <div className="space-y-2">

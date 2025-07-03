@@ -1,30 +1,67 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// This is a helper function to turn raw prompt text into styled HTML
-const formatPromptForDisplay = (text: string): string => {
-    if (!text) return '';
-    // Escape HTML to prevent any injection from the text content itself.
-    const escapedText = text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+// Define the sections we expect in the prompt with their display names
+const PROMPT_SECTIONS = [
+    { tag: 'persona', label: 'Persona', placeholder: 'Define the AI\'s role and identity...' },
+    { tag: 'objective', label: 'Objective', placeholder: 'What is the primary goal of the AI?' },
+    { tag: 'tone_of_voice', label: 'Tone of Voice', placeholder: 'Describe the communication style...' },
+    { tag: 'knowledge_source', label: 'Knowledge Source', placeholder: 'Information about knowledge sources...' },
+    { tag: 'brand_advantages', label: 'Brand Advantages', placeholder: 'Key advantages to emphasize...' },
+    { tag: 'core_tasks', label: 'Core Tasks', placeholder: 'Primary tasks the AI should support...' },
+    { tag: 'product_guidelines', label: 'Product Guidelines', placeholder: 'Guidelines for product recommendations...' },
+    { tag: 'inquiry_handling_moving', label: 'Moving Inquiry Handling', placeholder: 'How to handle moving-related inquiries...' },
+    { tag: 'inquiry_handling_valet_outbound', label: 'Valet Outbound Handling', placeholder: 'Handling valet storage outbound requests...' },
+    { tag: 'payment_information', label: 'Payment Information', placeholder: 'Payment options and policies...' },
+    { tag: 'prohibitions', label: 'Prohibitions', placeholder: 'What the AI should NOT do...' },
+];
 
-    // Use regex to find the now-escaped tags and wrap them in a styled span.
-    const styledText = escapedText.replace(
-        /(&lt;[^&]+?&gt;)/g,
-        '<span class="bg-slate-200 text-slate-700 font-mono px-2 py-0.5 rounded-md text-sm">$&</span>'
-    );
-    
-    return styledText;
+type SectionData = {
+    [key: string]: string;
 };
 
+// Parse the raw prompt text into sections
+const parsePromptIntoSections = (promptText: string): SectionData => {
+    const sections: SectionData = {};
+    
+    // Initialize all sections as empty
+    PROMPT_SECTIONS.forEach(section => {
+        sections[section.tag] = '';
+    });
+
+    // Regular expression to match <tag>content</tag> patterns
+    const tagRegex = /<(\w+)>([\s\S]*?)<\/\1>/g;
+    let match;
+
+    while ((match = tagRegex.exec(promptText)) !== null) {
+        const [, tagName, content] = match;
+        if (sections.hasOwnProperty(tagName)) {
+            sections[tagName] = content.trim();
+        }
+    }
+
+    return sections;
+};
+
+// Reconstruct the prompt from sections
+const reconstructPrompt = (sections: SectionData): string => {
+    let prompt = '';
+    
+    PROMPT_SECTIONS.forEach(section => {
+        const content = sections[section.tag];
+        if (content.trim()) {
+            prompt += `<${section.tag}>\n${content}\n</${section.tag}>\n\n`;
+        }
+    });
+
+    return prompt.trim();
+};
 
 export default function AIInstructionsPage() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const editorRef = useRef<HTMLDivElement>(null);
+    const [sections, setSections] = useState<SectionData>({});
     const router = useRouter();
 
     // Fetch the current prompt when the page loads
@@ -36,25 +73,29 @@ export default function AIInstructionsPage() {
                 return res.text();
             })
             .then(text => {
-                if (editorRef.current) {
-                    editorRef.current.innerHTML = formatPromptForDisplay(text);
-                }
+                const parsedSections = parsePromptIntoSections(text);
+                setSections(parsedSections);
                 setStatus('idle');
             })
             .catch(() => setStatus('error'));
     }, []);
 
+    const handleSectionChange = (sectionTag: string, value: string) => {
+        setSections(prev => ({
+            ...prev,
+            [sectionTag]: value
+        }));
+    };
+
     const handleSavePrompt = async () => {
-        if (!editorRef.current) return;
-        
-        const rawText = editorRef.current.innerText;
+        const reconstructedPrompt = reconstructPrompt(sections);
 
         setStatus('loading');
         try {
             const response = await fetch('/api/system-prompt', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: rawText }),
+                body: JSON.stringify({ prompt: reconstructedPrompt }),
             });
             if (!response.ok) throw new Error('Failed to save');
             setStatus('success');
@@ -76,20 +117,33 @@ export default function AIInstructionsPage() {
                 </button>
             </div>
             <p className="text-slate-600 mb-6">
-                This page allows you to define the core system prompt for the AI assistant. This prompt sets the AI's personality, rules, and overall behavior.
+                Configure the AI assistant's behavior by filling out each section below. Each section defines different aspects of how the AI should operate.
             </p>
-            <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col flex-grow shadow-sm">
-                <label htmlFor="system-prompt-editor" className="block text-sm font-medium text-slate-700 mb-1">
-                    Instructions
-                </label>
-                <div 
-                    ref={editorRef}
-                    id="system-prompt-editor"
-                    contentEditable={status !== 'loading'}
-                    className="w-full flex-grow p-3 border border-slate-300 rounded-lg resize-none whitespace-pre-wrap" 
-                    aria-placeholder="Enter the AI's system prompt here..."
-                />
-                <div className="flex justify-end mt-4">
+            
+            <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col flex-grow shadow-sm overflow-y-auto">
+                <div className="grid grid-cols-1 gap-6 mb-6">
+                    {PROMPT_SECTIONS.map((section) => (
+                        <div key={section.tag} className="flex flex-col">
+                            <label 
+                                htmlFor={`section-${section.tag}`} 
+                                className="block text-lg font-bold text-slate-800 mb-2 bg-slate-50 px-4 py-3 rounded-t-lg border border-b-0 border-slate-200"
+                            >
+                                {section.label}
+                            </label>
+                            <textarea
+                                id={`section-${section.tag}`}
+                                value={sections[section.tag] || ''}
+                                onChange={(e) => handleSectionChange(section.tag, e.target.value)}
+                                placeholder={section.placeholder}
+                                disabled={status === 'loading'}
+                                className="w-full min-h-[120px] p-3 border border-slate-300 border-t-0 rounded-b-lg resize-y focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
+                                style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}
+                            />
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="flex justify-end mt-4 pt-4 border-t border-slate-200">
                     <button 
                         onClick={handleSavePrompt} 
                         disabled={status === 'loading' || status === 'success'}
@@ -98,7 +152,7 @@ export default function AIInstructionsPage() {
                         {status === 'loading' && 'Saving...'}
                         {status === 'success' && 'Saved!'}
                         {status === 'error' && 'Error! Retry?'}
-                        {status === 'idle' && 'Save Prompt'}
+                        {status === 'idle' && 'Save Instructions'}
                     </button>
                 </div>
             </div>

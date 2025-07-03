@@ -3,6 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
 import { useState, useEffect, useRef } from 'react';
+import { useSessionStore } from '../stores/useSessionStore';
 import { getUser, supabase } from '../lib/supabase';
 
 const SparklesIcon = ({ className }: { className: string }) => (
@@ -35,27 +36,9 @@ export default function AIResponsePanel({
   onDeleteMessage: (messageId: string) => void;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
-  const [agentName, setAgentName] = useState<string>('You');
-  useEffect(() => {
-    const fetchAgentName = async () => {
-      const user = await getUser();
-      if (user?.email) {
-        const { data, error } = await supabase
-          .from('agents')
-          .select('name')
-          .eq('emailId', user.email)
-          .single();
-
-        if (error) {
-          console.error('Error fetching agent name:', error.message);
-        } else if (data) {
-          setAgentName(data.name);
-        }
-      }
-    };
-    fetchAgentName();
-  }, []);
-
+  const agentProfile = useSessionStore((state) => state.agentProfile);
+  const agentName = agentProfile?.name || 'Agent';
+  
   const {
     messages,
     input,
@@ -69,7 +52,6 @@ export default function AIResponsePanel({
     api: '/api/copilot',
     id: h2hChatId || undefined,
     initialMessages: initialH2aMessages,
-    // onFinish is no longer used for saving to prevent stale state issues.
   });
 
   const recentlyDeleted = useRef<string | null>(null);
@@ -112,7 +94,13 @@ export default function AIResponsePanel({
         } else {
             setMessages(initialH2aMessages);
         }
-    }
+      }
+    // If the chat has NOT changed and the initial messages are empty, we do nothing,
+    // thus ignoring the temporary loading state from the parent.
+
+    // Update refs for the next render cycle.
+    prevH2hChatIdRef.current = h2hChatId;
+    recentlyDeleted.current = null;
     // If the chat has NOT changed and the initial messages are empty, we do nothing,
     // thus ignoring the temporary loading state from the parent.
 
@@ -124,7 +112,7 @@ export default function AIResponsePanel({
   const handleQuickGeneration = () => {
     append({
         role: 'user',
-        content: 'Based on the H2H conversation provided in the system prompt, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
+        content: 'Based on the sales conversation provided, suggest the single best professional reply for the agent to send next. Do not add explanations, intros, markdown formatting, or labels. Just provide the reply.'
     }, {
       body: { h2hConversation: h2hContext, customPrompt: undefined }
     });
