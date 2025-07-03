@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+
 // Define the sections we expect in the prompt with their display names
 const PROMPT_SECTIONS = [
     { tag: 'persona', label: 'Persona', placeholder: 'Define the AI\'s role and identity...' },
@@ -83,6 +84,7 @@ export default function AIInstructionsPage() {
             })
             .catch(() => setStatus('error'));
     }, []);
+
 
     const handleSectionChange = (sectionTag: string, value: string) => {
         setSections(prev => ({
