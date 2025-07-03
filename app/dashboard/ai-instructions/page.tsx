@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
+import { useSessionStore } from '../../stores/useSessionStore';
 
 // Define the sections we expect in the prompt with their display names
 const PROMPT_SECTIONS = [
@@ -67,6 +67,9 @@ export default function AIInstructionsPage() {
     const [editedTime, setEditedTime] = useState<string | null>(null);
     const router = useRouter();
 
+    const agentProfile = useSessionStore((state) => state.agentProfile);
+    const agentName = agentProfile?.name || 'Agent';
+
     // Fetch the current prompt when the page loads
     useEffect(() => {
         setStatus('loading');
@@ -101,7 +104,9 @@ export default function AIInstructionsPage() {
             const response = await fetch('/api/system-prompt', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: reconstructedPrompt }),
+                body: JSON.stringify({ prompt: reconstructedPrompt, 
+                    userName: agentName
+                 }),
             });
             if (!response.ok) throw new Error('Failed to save');
             setStatus('success');

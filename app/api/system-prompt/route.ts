@@ -1,9 +1,8 @@
-import { supabase, getUserName } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
 // This is a default prompt that will be used if none is found in the database.
 const defaultPrompt = `You are an expert customer service assistant. Your primary goal is to help the user resolve their issues efficiently and with a friendly tone.`;
-const user = getUserName();
 // GET handler to fetch the current system prompt
 export async function GET() {
   try {
@@ -33,8 +32,7 @@ export async function GET() {
 // POST handler to save the system prompt
 export async function POST(req: Request) {
   try {
-    console.log(user);
-    const { prompt } = await req.json();
+    const { prompt, userName } = await req.json();
 
     if (typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Invalid prompt format' }, { status: 400 });
@@ -47,7 +45,7 @@ export async function POST(req: Request) {
       .upsert({ 
         id: 1, 
         prompt_text: prompt, 
-        edited_by: user,
+        edited_by: userName,
         edited_time: new Date().toISOString()
       }, { onConflict: 'id' });
 
