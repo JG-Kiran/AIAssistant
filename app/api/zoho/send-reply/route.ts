@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ 
         channel, 
         content,
-        ...(fromEmailAddress && { fromEmailAddress })
+        fromEmailAddress
       })
     });
 
