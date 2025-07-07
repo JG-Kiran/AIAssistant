@@ -1,10 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
 import { useSessionStore } from '@/stores/useSessionStore';
 
-const userEmail = useSessionStore.getState().agentProfile?.emailId;
-
-async function refreshZohoToken(refreshToken: string) {
+async function refreshZohoToken(refreshToken: string, agentEmail: string) {
   console.log('🔄 Access token is expired or missing. Refreshing...');
   
   const response = await fetch('https://accounts.zoho.com/oauth/v2/token', {
@@ -31,7 +30,7 @@ async function refreshZohoToken(refreshToken: string) {
   await supabase
     .from('agents')
     .update({ zoho_access_token: data.access_token, zoho_token_expiry: new Date(Date.now() + data.expires_in * 1000) })
-    .eq('emailId', userEmail);
+    .eq('emailId', agentEmail);
     
   return {
     newAccessToken: data.access_token,
@@ -41,6 +40,22 @@ async function refreshZohoToken(refreshToken: string) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get user identity from the secure JWT
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = jwt.verify(token, process.env.SUPABASE_JWT_SECRET!) as { email: string };
+    const userEmail = decoded.email;
+
+    if (!userEmail) {
+      return NextResponse.json({ success: false, error: 'Invalid token: email missing' }, { status: 401 });
+    }
+    // -------------------------------------------------------------------
+
     const { ticketId, content, channel } = await request.json();
     if (!ticketId || !content || !channel) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
@@ -52,18 +67,18 @@ export async function POST(request: NextRequest) {
       .eq('emailId', userEmail)
       .single();
 
-    let { accessToken, refreshToken, tokenExpiry } = primaryAgent;
+    let { 
+      zoho_access_token: accessToken, 
+      zoho_refresh_token: refreshToken, 
+      zoho_token_expiry: tokenExpiry 
+    } = primaryAgent;
+
     const isTokenExpired = !tokenExpiry || new Date(tokenExpiry) <= new Date();
 
-    if (isTokenExpired) {
-        const { newAccessToken, newExpiry } = await refreshZohoToken(refreshToken);
-        accessToken = newAccessToken;
-        tokenExpiry = newExpiry.toISOString();
-    }
-
-    if (!accessToken) {
-        console.error('invalid access token');
-        return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
+    if (!accessToken || isTokenExpired) {
+      const { newAccessToken, newExpiry } = await refreshZohoToken(refreshToken, userEmail);
+      accessToken = newAccessToken;
+      tokenExpiry = newExpiry.toISOString();
     }
 
     // Send reply to Zoho Desk
