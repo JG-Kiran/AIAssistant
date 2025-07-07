@@ -161,31 +161,44 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   };
 
   const handleSendMessage = async () => {
-    if (message.trim() && selectedTicketId && agentProfile?.emailId) {
+    if (message.trim() && selectedTicketId) {
       try {
-        // Get the agent ID for impersonation
-        const agentId = await getAgentId(agentProfile.emailId);
-        
-        if (!agentId) {
-          alert('Unable to retrieve agent ID for impersonation');
-          return;
-        }
-
         // Use the ticket's channel if available, otherwise default to 'Email'
         const channel = modeToChannelMap[ticketDetails?.mode || ''] || 'EMAIL';
+        
+        // Prepare request body based on channel type
+        let requestBody: any = {
+          ticketId: selectedTicketId,
+          content: message,
+          channel,
+        };
+
+        // For EMAIL channel, add impersonation and email-specific fields
+        if (channel === 'EMAIL' && agentProfile?.emailId) {
+          // Get the agent ID for impersonation
+          const agentId = await getAgentId(agentProfile.emailId);
+          
+          if (!agentId) {
+            alert('Unable to retrieve agent ID for impersonation');
+            return;
+          }
+
+          requestBody.impersonatedUserId = agentId;
+          requestBody.fromEmailAddress = agentProfile.emailId;
+          // Add customer email as 'to' if available
+          if (ticketDetails?.email) {
+            requestBody.toEmailAddress = ticketDetails.email;
+          }
+        }
+
         const response = await fetch('/api/zoho/send-reply', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            ticketId: selectedTicketId,
-            content: message,
-            channel,
-            impersonatedUserId: agentId,
-            fromEmailAddress: agentProfile.emailId,
-          }),
+          body: JSON.stringify(requestBody),
         });
+        
         const result = await response.json();
         if (!result.success) {
           alert('Failed to send reply to Zoho Desk: ' + (result.error || 'Unknown error'));

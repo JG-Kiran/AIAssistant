@@ -80,16 +80,50 @@ async function getAccessToken(userEmail: string): Promise<string | null> {
 
 export async function POST(request: NextRequest) {
   try {
-    const { ticketId, content, channel, impersonatedUserId, fromEmailAddress } = await request.json();
-    if (!ticketId || !content || !channel || !fromEmailAddress) {
-        return NextResponse.json({ success: false, error: 'Missing required fields (including fromEmailAddress)' }, { status: 400 });
+    const { ticketId, content, channel, impersonatedUserId, fromEmailAddress, toEmailAddress } = await request.json();
+    if (!ticketId || !content || !channel) {
+        return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Get access token from Supabase using the agent's email
-    const accessToken = await getAccessToken(fromEmailAddress);
-    if (!accessToken) {
-        console.error('Failed to get valid access token for agent:', fromEmailAddress);
-        return NextResponse.json({ success: false, error: 'Unable to authenticate with Zoho Desk' }, { status: 500 });
+    // For EMAIL channel, we need fromEmailAddress for impersonation
+    if (channel === 'EMAIL' && !fromEmailAddress) {
+        return NextResponse.json({ success: false, error: 'fromEmailAddress is required for EMAIL channel' }, { status: 400 });
+    }
+
+    // Get access token from Supabase using the agent's email (only for EMAIL channel with impersonation)
+    let accessToken;
+    if (channel === 'EMAIL' && fromEmailAddress) {
+      accessToken = await getAccessToken(fromEmailAddress);
+      if (!accessToken) {
+          console.error('Failed to get valid access token for agent:', fromEmailAddress);
+          return NextResponse.json({ success: false, error: 'Unable to authenticate with Zoho Desk' }, { status: 500 });
+      }
+    } else {
+      // Fallback to environment variable for non-EMAIL channels
+      accessToken = process.env.ZOHO_DESK_AUTH_TOKEN;
+      if (!accessToken) {
+          console.error('ZOHO_DESK_AUTH_TOKEN not set in environment');
+          return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 });
+      }
+    }
+
+    // Prepare request body based on channel type
+    let requestBody;
+    if (channel === 'EMAIL') {
+      // EMAIL channel requires additional fields
+      requestBody = {
+        channel,
+        content,
+        fromEmailAddress,
+        contentType: 'html', // or 'plainText' depending on your needs
+        ...(toEmailAddress && { to: toEmailAddress })
+      };
+    } else {
+      // Other channels use simple format
+      requestBody = {
+        channel,
+        content
+      };
     }
 
     // Send reply to Zoho Desk
@@ -98,14 +132,11 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
-        'impersonatedUserId': impersonatedUserId || '',
+        // Only use impersonatedUserId for EMAIL channel
+        'impersonatedUserId': (channel === 'EMAIL' && impersonatedUserId) ? impersonatedUserId : '',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ 
-        channel, 
-        content,
-        fromEmailAddress
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!zohoResponse.ok) {
