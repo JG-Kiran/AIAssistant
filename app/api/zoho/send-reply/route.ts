@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { ticketId, content, channel } = await request.json();
+    const { ticketId, content, channel, impersonatedUserId, fromEmailAddress } = await request.json();
     if (!ticketId || !content || !channel) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
@@ -20,9 +20,14 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
+        'impersonatedUserId': impersonatedUserId || '',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ channel, content })
+      body: JSON.stringify({ 
+        channel, 
+        content,
+        ...(fromEmailAddress && { fromEmailAddress })
+      })
     });
 
     if (!zohoResponse.ok) {

@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import AIResponsePanel from './AIResponsePanel';
 import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
+import { useSessionStore } from '../stores/useSessionStore';
 import ChatLog from './ChatLog';
 import MessageInput from './MessageInput';
 import { convert } from 'html-to-text';
 import { Message } from 'ai';
-import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage } from '../lib/supabase';
+import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage, getAgentId } from '../lib/supabase';
 
 export interface ChatMessage {
   id: number;
@@ -32,6 +33,8 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   // Get the global store and the new action
   const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
+  // Get agent profile from session store
+  const { agentProfile } = useSessionStore();
 
   // This effect now fetches initial messages and puts them in the GLOBAL store
   useEffect(() => {
@@ -158,8 +161,16 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   };
 
   const handleSendMessage = async () => {
-    if (message.trim() && selectedTicketId) {
+    if (message.trim() && selectedTicketId && agentProfile?.emailId) {
       try {
+        // Get the agent ID for impersonation
+        const agentId = await getAgentId(agentProfile.emailId);
+        
+        if (!agentId) {
+          alert('Unable to retrieve agent ID for impersonation');
+          return;
+        }
+
         // Use the ticket's channel if available, otherwise default to 'Email'
         const channel = modeToChannelMap[ticketDetails?.mode || ''] || 'EMAIL';
         const response = await fetch('/api/zoho/send-reply', {
@@ -171,6 +182,8 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             ticketId: selectedTicketId,
             content: message,
             channel,
+            impersonatedUserId: agentId,
+            fromEmailAddress: agentProfile.emailId,
           }),
         });
         const result = await response.json();

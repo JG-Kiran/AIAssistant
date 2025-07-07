@@ -34,6 +34,21 @@ export async function getUserName() {
   return agentName;
 }
 
+export async function getAgentId(email: string): Promise<string | null> {
+  const { data: agentData, error: agentError } = await supabase
+    .from('agents')
+    .select('id')
+    .eq('emailId', email)
+    .single();
+  
+  if (agentError) {
+    console.error('Error fetching agent ID:', agentError);
+    return null;
+  }
+  
+  return agentData ? agentData.id.toString() : null;
+}
+
 // --- FUNCTION TO SAVE H2A MESSAGES ---
 // This function contains the actual database logic.
 export async function saveH2AMessages(ticketId: string, messages: Message[]) {
@@ -99,3 +114,4 @@ export async function deleteH2aMessage(messageId: string) {
   }
   return true;
 }
+
