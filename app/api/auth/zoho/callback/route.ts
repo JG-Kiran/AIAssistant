@@ -13,8 +13,10 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
+  const baseUrl = url.origin;
+
   if (!code) {
-    return NextResponse.redirect('/login?error=zoho_auth_failed');
+    return NextResponse.redirect(`${baseUrl}/login?error=zoho_auth_failed`);
   }
 
   try {
@@ -79,12 +81,12 @@ export async function GET(request: NextRequest) {
     );
 
     // 5. Redirect user to a special client-side page to complete the login
-    const redirectUrl = new URL('/login/callback', request.url);
+    const redirectUrl = new URL('/login/callback', baseUrl);
     redirectUrl.searchParams.set('token', supabaseJwt);
     return NextResponse.redirect(redirectUrl.toString());
 
   } catch (error) {
     console.error('Zoho Auth Callback Error:', error);
-    return NextResponse.redirect('/login?error=custom_auth_failed');
+    return NextResponse.redirect(`${baseUrl}/login?error=custom_auth_failed`);
   }
 }
