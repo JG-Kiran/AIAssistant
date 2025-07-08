@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
         .single();
       agent = upsertResult.data;
       upsertError = upsertResult.error;
-      console.log('Supabase upsert agent result:', upsertResult);
     } catch (err) {
       console.error('Error during agent upsert:', err);
       throw err;
@@ -119,9 +118,6 @@ export async function GET(request: NextRequest) {
       console.error('Error signing JWT:', err);
       throw err;
     }
-
-    const decoded = jwt.decode(supabaseJwt, { complete: true });
-    console.log('Decoded JWT:', JSON.stringify(decoded, null, 2));
 
     // 5. Redirect user to a special client-side page to complete the login
     const redirectUrl = new URL('/login/callback', baseUrl);
