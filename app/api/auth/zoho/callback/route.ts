@@ -53,22 +53,6 @@ export async function GET(request: NextRequest) {
     const agentEmail = zohoUser.emailId;
 
     // 3. Find or Create an agent in Supabase
-    let authUserId: string;
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-    
-    const user = data.users.find((user) => user.email === agentEmail);
-
-    if (user) {
-      authUserId = user?.id;
-    } else {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: agentEmail,
-        email_confirm: true,
-      });
-      if (createError) throw createError;
-      authUserId = newUser.user.id;
-    }
-
     // 'upsert' will INSERT a new row if it doesn't exist, or UPDATE it if it does.
     let agent, upsertError;
     try {
@@ -102,7 +86,38 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user or create if missing
-   
+    let authUserId: string;
+    console.log(`[AUTH_FLOW] Step 1: Searching for user with email: ${agentEmail}`);
+
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    if (error) {
+      console.error(`[AUTH_FLOW] Step 2 ERROR: Failed to list users for email: ${agentEmail}`, error);
+    } else {
+      console.log(`[AUTH_FLOW] Step 2: List users returned. Data:`, data, `Error:`, error);
+    }
+
+    let user = data?.users?.find((user) => user.email === agentEmail);
+    console.log(`[AUTH_FLOW] Step 3: Current user:`, user);
+
+    if (user) {
+      authUserId = user?.id;
+    } else {
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: agentEmail,
+        email_confirm: true,
+      });
+      if (createError) {
+        console.error(`[AUTH_FLOW] Step 4 ERROR: Failed to create user for email: ${agentEmail}`, createError);
+        throw createError;
+      }
+      if (!newUser?.user) {
+        console.error(`[AUTH_FLOW] Step 4 ERROR: User creation returned no user object for email: ${agentEmail}`);
+        throw new Error('User creation failed: No user object returned');
+      }
+      authUserId = newUser.user.id;
+      // Optionally, log the new user
+      console.log(`[AUTH_FLOW] Step 4: Created new user:`, newUser.user);
+    }
 
     // 4. Mint a custom Supabase JWT to log the user into your portal
     let supabaseJwt;
