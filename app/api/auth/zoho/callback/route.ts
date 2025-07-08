@@ -54,16 +54,12 @@ export async function GET(request: NextRequest) {
 
     // 3. Find or Create an agent in Supabase
     let authUserId: string;
-    const { data: existingUser, error: rpcError } = await supabaseAdmin
-      .rpc('get_user_by_email', { user_email: agentEmail })
-      .single();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
     
-    if (rpcError && rpcError.code !== 'PGRST116') { // Ignore 'No rows found' error
-      throw new Error(`Database RPC error: ${rpcError.message}`);
-    }
+    const user = data.users.find((user) => user.email === agentEmail);
 
-    if (existingUser && existingUser.id) {
-      authUserId = existingUser.id;
+    if (user) {
+      authUserId = user?.id;
     } else {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: agentEmail,
