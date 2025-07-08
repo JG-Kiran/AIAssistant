@@ -52,7 +52,27 @@ export async function GET(request: NextRequest) {
     }
     const agentEmail = zohoUser.emailId;
 
-    // 3. Find or Create an agent in Supabase using 'upsert'
+    // 3. Find or Create an agent in Supabase
+    let authUserId: string;
+    const { data: existingUser, error: rpcError } = await supabaseAdmin
+      .rpc('get_user_by_email', { user_email: agentEmail })
+      .single();
+    
+    if (rpcError && rpcError.code !== 'PGRST116') { // Ignore 'No rows found' error
+      throw new Error(`Database RPC error: ${rpcError.message}`);
+    }
+
+    if (existingUser && existingUser.id) {
+      authUserId = existingUser.id;
+    } else {
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: agentEmail,
+        email_confirm: true,
+      });
+      if (createError) throw createError;
+      authUserId = newUser.user.id;
+    }
+
     // 'upsert' will INSERT a new row if it doesn't exist, or UPDATE it if it does.
     let agent, upsertError;
     try {
@@ -86,20 +106,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user or create if missing
-    let authUserId: string;
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listError) throw new Error(`Error finding user: ${listError.message}`);
-
-    if (users && users.length > 0) {
-      authUserId = users[0].id;
-    } else {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: agentEmail,
-        email_confirm: true,
-      });
-      if (createError) throw new Error(`Could not create Supabase auth user: ${createError.message}`);
-      authUserId = newUser.user.id;
-    }
+   
 
     // 4. Mint a custom Supabase JWT to log the user into your portal
     let supabaseJwt;
