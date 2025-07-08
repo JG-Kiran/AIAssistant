@@ -52,49 +52,6 @@ export async function GET(request: NextRequest) {
     }
     const agentEmail = zohoUser.emailId;
 
-    // Find or create a user in Supabase Auth
-    let authUserId: string;
-    let existingUser;
-    try {
-      // @ts-ignore: getUserByEmail may not exist, log for debugging
-      const userResult = await supabaseAdmin.auth.admin.getUserByEmail(agentEmail);
-      existingUser = userResult?.data?.user;
-      console.log('Supabase getUserByEmail result:', userResult);
-    } catch (err) {
-      console.error('Error calling getUserByEmail:', err);
-      throw err;
-    }
-
-    if (existingUser) {
-      // User already exists, use their ID
-      authUserId = existingUser.id;
-    } else {
-      // User doesn't exist, create a new one
-      let newUser, createError;
-      try {
-        const createResult = await supabaseAdmin.auth.admin.createUser({
-          email: agentEmail,
-          email_confirm: true, // Already verified by Zoho
-        });
-        newUser = createResult.data;
-        createError = createResult.error;
-        console.log('Supabase createUser result:', createResult);
-      } catch (err) {
-        console.error('Error calling createUser:', err);
-        throw err;
-      }
-
-      if (createError) {
-        console.error('Could not create Supabase auth user:', createError);
-        throw new Error(`Could not create Supabase auth user: ${createError.message}`);
-      }
-      if (!newUser || !newUser.user) {
-        console.error('Supabase createUser did not return a user:', newUser);
-        throw new Error('Supabase createUser did not return a user');
-      }
-      authUserId = newUser.user.id;
-    }
-
     // 3. Find or Create an agent in Supabase using 'upsert'
     // 'upsert' will INSERT a new row if it doesn't exist, or UPDATE it if it does.
     let agent, upsertError;
