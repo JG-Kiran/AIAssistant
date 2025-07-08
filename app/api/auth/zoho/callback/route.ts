@@ -87,18 +87,8 @@ export async function GET(request: NextRequest) {
 
     // Get user or create if missing
     let authUserId: string;
-    console.log(`[AUTH_FLOW] Step 1: Searching for user with email: ${agentEmail}`);
-
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-    if (error) {
-      console.error(`[AUTH_FLOW] Step 2 ERROR: Failed to list users for email: ${agentEmail}`, error);
-    } else {
-      console.log(`[AUTH_FLOW] Step 2: List users returned. Data:`, data, `Error:`, error);
-    }
-
     let user = data?.users?.find((user) => user.email === agentEmail);
-    console.log(`[AUTH_FLOW] Step 3: Current user:`, user);
-
     if (user) {
       authUserId = user?.id;
       console.log('authUserId:', authUserId);
@@ -107,17 +97,9 @@ export async function GET(request: NextRequest) {
         email: agentEmail,
         email_confirm: true,
       });
-      if (createError) {
-        console.error(`[AUTH_FLOW] Step 4 ERROR: Failed to create user for email: ${agentEmail}`, createError);
-        throw createError;
-      }
-      if (!newUser?.user) {
-        console.error(`[AUTH_FLOW] Step 4 ERROR: User creation returned no user object for email: ${agentEmail}`);
-        throw new Error('User creation failed: No user object returned');
-      }
-      authUserId = newUser.user.id;
-      // Optionally, log the new user
-      console.log(`[AUTH_FLOW] Step 4: Created new user:`, newUser.user);
+      if (createError) throw createError;
+      authUserId = newUser.user?.id;
+      console.log('Created new user:', newUser.user);
     }
 
     // 4. Mint a custom Supabase JWT to log the user into your portal
@@ -128,7 +110,7 @@ export async function GET(request: NextRequest) {
           aud: 'authenticated',
           exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
           sub: authUserId,
-          email: agent.emailId,
+          email: agentEmail,
           role: 'authenticated',
         },
         process.env.SUPABASE_JWT_SECRET!
@@ -137,6 +119,9 @@ export async function GET(request: NextRequest) {
       console.error('Error signing JWT:', err);
       throw err;
     }
+
+    const decoded = jwt.decode(supabaseJwt, { complete: true });
+    console.log('Decoded JWT:', JSON.stringify(decoded, null, 2));
 
     // 5. Redirect user to a special client-side page to complete the login
     const redirectUrl = new URL('/login/callback', baseUrl);
