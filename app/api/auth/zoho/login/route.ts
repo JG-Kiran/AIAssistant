@@ -9,7 +9,7 @@ export function GET() {
   authUrl.searchParams.append('client_id', process.env.ZOHO_CLIENT_ID!);
   
   // These 'scopes' are critical. They tell Zoho what your app wants permission to do.
-  authUrl.searchParams.append('scope', 'Desk.tickets.READ,Desk.tickets.WRITE'); 
+  authUrl.searchParams.append('scope', 'Desk.tickets.READ,Desk.tickets.WRITE,Desk.settings.READ'); 
   
   // This is the callback URL where Zoho will send the user back to after they log in.
   authUrl.searchParams.append('redirect_uri', process.env.ZOHO_REDIRECT_URI!);

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const token_expiry = new Date(Date.now() + expires_in * 1000);
 
     // 2. Use the Zoho access token to get the agent's profile
-    const userProfileResponse = await fetch('https://desk.zoho.com/api/v1/agents/me', {
+    const userProfileResponse = await fetch('https://desk.zoho.com/api/v1/myinfo', {
       headers: { 'Authorization': `Zoho-oauthtoken ${access_token}` },
     });
     const zohoUser = await userProfileResponse.json();
