@@ -17,8 +17,8 @@ export default function AuthCallbackClient() {
       // Use the custom JWT to sign in
       supabase.auth.setSession({ access_token: token, refresh_token: '' }).then(async ({ error }) => {
         if (error) {
-          console.error('Session Error:', error);
-          console.error('JWT used:', jwt.decode(token, { complete: true }));
+          console.log('Session Error:', error);
+          console.log('JWT used:', jwt.decode(token, { complete: true }));
           router.push('/login?error=session_failed');
         } else {
           // IMPORTANT: Initialize the session to fetch the new user's data
