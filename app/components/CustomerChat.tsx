@@ -160,12 +160,25 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   const handleSendMessage = async () => {
     if (message.trim() && selectedTicketId) {
       try {
-        // Use the ticket's channel if available, otherwise default to 'Email'
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          alert('Could not retrieve session. Please try logging out and back in.');
+          console.error('Session retrieval error:', sessionError);
+          return;
+        }
+        if (!session) {
+          alert('You are not logged in. Please log out and log back in.');
+          return;
+        }
+
+        const accessToken = session.access_token;
         const channel = modeToChannelMap[ticketDetails?.mode || ''] || 'EMAIL';
+
         const response = await fetch('/api/zoho/send-reply', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             ticketId: selectedTicketId,
