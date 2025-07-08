@@ -85,6 +85,22 @@ export async function GET(request: NextRequest) {
       throw upsertError;
     }
 
+    // Get user or create if missing
+    let authUserId: string;
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) throw new Error(`Error finding user: ${listError.message}`);
+
+    if (users && users.length > 0) {
+      authUserId = users[0].id;
+    } else {
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: agentEmail,
+        email_confirm: true,
+      });
+      if (createError) throw new Error(`Could not create Supabase auth user: ${createError.message}`);
+      authUserId = newUser.user.id;
+    }
+
     // 4. Mint a custom Supabase JWT to log the user into your portal
     let supabaseJwt;
     try {
@@ -92,7 +108,7 @@ export async function GET(request: NextRequest) {
         {
           aud: 'authenticated',
           exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
-          sub: agent.id, // Use the ID from your agents table
+          sub: authUserId,
           email: agent.emailId,
           role: 'authenticated',
         },
