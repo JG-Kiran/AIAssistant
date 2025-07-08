@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     });
     const zohoTokens = await tokenResponse.json();
     if (!zohoTokens.access_token) {
+        console.error('Failed to get access token from Zoho:', zohoTokens);
         throw new Error('Failed to get access token from Zoho');
     }
 
@@ -45,40 +46,105 @@ export async function GET(request: NextRequest) {
       headers: { 'Authorization': `Zoho-oauthtoken ${access_token}` },
     });
     const zohoUser = await userProfileResponse.json();
+    if (!zohoUser || !zohoUser.emailId) {
+      console.error('Failed to fetch Zoho user profile:', zohoUser);
+      throw new Error('Failed to fetch Zoho user profile');
+    }
     const agentEmail = zohoUser.emailId;
+
+    // Find or create a user in Supabase Auth
+    let authUserId: string;
+    let existingUser;
+    try {
+      // @ts-ignore: getUserByEmail may not exist, log for debugging
+      const userResult = await supabaseAdmin.auth.admin.getUserByEmail(agentEmail);
+      existingUser = userResult?.data?.user;
+      console.log('Supabase getUserByEmail result:', userResult);
+    } catch (err) {
+      console.error('Error calling getUserByEmail:', err);
+      throw err;
+    }
+
+    if (existingUser) {
+      // User already exists, use their ID
+      authUserId = existingUser.id;
+    } else {
+      // User doesn't exist, create a new one
+      let newUser, createError;
+      try {
+        const createResult = await supabaseAdmin.auth.admin.createUser({
+          email: agentEmail,
+          email_confirm: true, // Already verified by Zoho
+        });
+        newUser = createResult.data;
+        createError = createResult.error;
+        console.log('Supabase createUser result:', createResult);
+      } catch (err) {
+        console.error('Error calling createUser:', err);
+        throw err;
+      }
+
+      if (createError) {
+        console.error('Could not create Supabase auth user:', createError);
+        throw new Error(`Could not create Supabase auth user: ${createError.message}`);
+      }
+      if (!newUser || !newUser.user) {
+        console.error('Supabase createUser did not return a user:', newUser);
+        throw new Error('Supabase createUser did not return a user');
+      }
+      authUserId = newUser.user.id;
+    }
 
     // 3. Find or Create an agent in Supabase using 'upsert'
     // 'upsert' will INSERT a new row if it doesn't exist, or UPDATE it if it does.
-    const { data: agent, error: upsertError } = await supabaseAdmin
-      .from('agents')
-      .upsert({
-          emailId: agentEmail,
-          name: zohoUser.name,
-          zuid: zohoUser.zuid,
-          photoURL: zohoUser.photoURL,
-          // This is where you store the tokens!
-          zoho_access_token: access_token,
-          zoho_refresh_token: refresh_token,
-          zoho_token_expiry: token_expiry,
-      }, {
-          onConflict: 'emailId', // If an agent with this email already exists, update it
-      })
-      .select()
-      .single();
+    let agent, upsertError;
+    try {
+      const upsertResult = await supabaseAdmin
+        .from('agents')
+        .upsert({
+            emailId: agentEmail,
+            name: zohoUser.name,
+            zuid: zohoUser.zuid,
+            photoURL: zohoUser.photoURL,
+            // This is where you store the tokens!
+            zoho_access_token: access_token,
+            zoho_refresh_token: refresh_token,
+            zoho_token_expiry: token_expiry,
+        }, {
+            onConflict: 'emailId', // If an agent with this email already exists, update it
+        })
+        .select()
+        .single();
+      agent = upsertResult.data;
+      upsertError = upsertResult.error;
+      console.log('Supabase upsert agent result:', upsertResult);
+    } catch (err) {
+      console.error('Error during agent upsert:', err);
+      throw err;
+    }
 
-    if (upsertError) throw upsertError;
+    if (upsertError) {
+      console.error('Upsert error:', upsertError);
+      throw upsertError;
+    }
 
     // 4. Mint a custom Supabase JWT to log the user into your portal
-    const supabaseJwt = jwt.sign(
-      {
-        aud: 'authenticated',
-        exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
-        sub: agent.id, // Use the ID from your agents table
-        email: agent.emailId,
-        role: 'authenticated',
-      },
-      process.env.SUPABASE_JWT_SECRET!
-    );
+    let supabaseJwt;
+    try {
+      supabaseJwt = jwt.sign(
+        {
+          aud: 'authenticated',
+          exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
+          sub: agent.id, // Use the ID from your agents table
+          email: agent.emailId,
+          role: 'authenticated',
+        },
+        process.env.SUPABASE_JWT_SECRET!
+      );
+    } catch (err) {
+      console.error('Error signing JWT:', err);
+      throw err;
+    }
 
     // 5. Redirect user to a special client-side page to complete the login
     const redirectUrl = new URL('/login/callback', baseUrl);
