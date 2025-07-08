@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
 
     if (user) {
       authUserId = user?.id;
+      console.log('authUserId:', authUserId);
     } else {
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: agentEmail,
