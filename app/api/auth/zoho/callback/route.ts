@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
       const upsertResult = await supabaseAdmin
         .from('agents')
         .upsert({
-            emailId: agentEmail,
+            id: zohoUser.id,
             name: zohoUser.name,
             zuid: zohoUser.zuid,
+            emailId: agentEmail,
             photoURL: zohoUser.photoURL,
-            // This is where you store the tokens!
             zoho_access_token: access_token,
             zoho_refresh_token: refresh_token,
             zoho_token_expiry: token_expiry,
