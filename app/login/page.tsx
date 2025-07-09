@@ -85,7 +85,7 @@ export default function LoginPage() {
             <p className="text-slate-500">Sign in to continue to the dashboard</p>
           </div>
           
-          {/*<form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6">
              <div>
                 <label htmlFor="agent-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input
@@ -98,7 +98,7 @@ export default function LoginPage() {
                   required
                 />
              </div>
-              <div>
+              {/* <div>
                 <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password (optional)</label>
                 <input
                   id="agent-password"
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
-             </div> 
+             </div>  */}
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
@@ -118,10 +118,10 @@ export default function LoginPage() {
             <button type="submit" className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-blue-500/20">
               Sign In
             </button>
-          </form> */}
+          </form>
           <div className="my-6 flex items-center">
               <div className="flex-grow border-t border-slate-300"></div>
-              {/*<span className="flex-shrink mx-4 text-slate-400">OR</span>*/}
+              <span className="flex-shrink mx-4 text-slate-400">OR</span>
               <div className="flex-grow border-t border-slate-300"></div>
           </div>
           <a
