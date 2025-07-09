@@ -184,7 +184,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             ticketId: selectedTicketId,
             content: message,
             channel,
-            fromEmailAddress: null
+            fromEmailAddress: "support@mystorage.zohodesk.com"
           }),
         });
         const result = await response.json();

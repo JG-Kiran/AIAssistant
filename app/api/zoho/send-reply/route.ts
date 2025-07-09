@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
     if (!ticketId || !content || !channel) {
         return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
-    const finalFromEmailAddress = fromEmailAddress || userEmail;
 
     let { data: primaryAgent } = await supabase
       .from('agents')
@@ -90,7 +89,7 @@ export async function POST(request: NextRequest) {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ channel, content, fromEmailAddress: finalFromEmailAddress })
+      body: JSON.stringify({ channel, content, fromEmailAddress })
     });
 
     if (!zohoResponse.ok) {
