@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch Zoho user profile');
     }
 
+    console.log('ZohoUser: ', zohoUser);
     console.log('Orgid: ', zohoUser.orgId.toString());
     // --- SECURITY CHECK ---
     // Ensure the user belongs to your organization
