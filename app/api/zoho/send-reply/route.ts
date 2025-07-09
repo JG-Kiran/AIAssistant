@@ -11,8 +11,8 @@ async function refreshZohoToken(refreshToken: string, agentEmail: string) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       refresh_token: refreshToken,
-      client_id: process.env.OLD_ZOHO_CLIENT_ID!,
-      client_secret: process.env.OLD_ZOHO_CLIENT_SECRET!,
+      client_id: process.env.ZOHO_CLIENT_ID!,
+      client_secret: process.env.ZOHO_CLIENT_SECRET!,
       grant_type: 'refresh_token',
     }),
   });
