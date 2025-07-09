@@ -51,16 +51,13 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch Zoho user profile');
     }
 
-    console.log('ZohoUser: ', zohoUser);
-    console.log('Orgid: ', zohoUser.orgId.toString());
     // --- SECURITY CHECK ---
     // Ensure the user belongs to your organization
-    if (zohoUser.orgId.toString() !== process.env.ZOHO_ORG_ID) {
-      console.warn(`Unauthorized login attempt from orgId: ${zohoUser.orgId} for email: ${zohoUser.emailId}`);
-      // Redirect to login with an error message
-      return NextResponse.redirect(`${baseUrl}/login?error=unauthorized_organization`);
+    const authorizedDepartmentId = process.env.ZOHO_DEPARTMENT_ID;
+    if (!authorizedDepartmentId || !zohoUser.associatedDepartmentIds.includes(authorizedDepartmentId)) {
+      console.warn(`Unauthorized login attempt for email: ${zohoUser.emailId}. User is not in the authorized department.`);
+      return NextResponse.redirect(`${baseUrl}/login?error=unauthorized_department`);
     }
-
     const agentEmail = zohoUser.emailId;
 
     // 3. Find or Create an agent in Supabase
