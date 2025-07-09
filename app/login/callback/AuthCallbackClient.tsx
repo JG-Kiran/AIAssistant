@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { useSessionStore } from '../../stores/useSessionStore';
 import jwt from 'jsonwebtoken';
 
@@ -44,6 +44,14 @@ export default function AuthCallbackClient() {
       
       console.log('[CLIENT_CALLBACK] Attempting to set session with the received token...');
       
+      const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      });
+
       supabase.auth.setSession({ access_token: token, refresh_token: '' })
         .then(async ({ data, error }) => {
           if (error) {

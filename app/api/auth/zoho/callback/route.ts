@@ -101,6 +101,21 @@ export async function GET(request: NextRequest) {
       console.log('Created new user:', newUser.user);
     }
 
+    // Login using magic link
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: agentEmail,
+      options: {
+        redirectTo: `${baseUrl}/dashboard`,
+      }
+    });
+
+    if (linkError) {
+      return NextResponse.json({ error: linkError.message }, { status: 500 });
+    }
+
+    return NextResponse.redirect(linkData.properties.action_link!, { status: 302 });
+
     // 4. Mint a custom Supabase JWT to log the user into your portal
     let supabaseJwt;
     try {

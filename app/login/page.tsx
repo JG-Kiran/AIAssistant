@@ -18,6 +18,7 @@ const SparklesIcon = ({ className }: { className: string }) => (
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -27,16 +28,24 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithOtp({
       email,
-      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
     });
+
+    // const { error: signInError } = await supabase.auth.signInWithPassword({
+    //   email,
+    //   password,
+    // });
 
     if (signInError) {
       setError(signInError.message);
     } else {
-      await initializeSession();
-      router.push('/dashboard');
+      setMessage('Check your email for the login link!');
+      // await initializeSession();
+      // router.push('/dashboard');
     }
   };
 
@@ -79,7 +88,7 @@ export default function LoginPage() {
                   required
                 />
              </div>
-             <div>
+             {/* <div>
                 <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                 <input
                   id="agent-password"
@@ -90,12 +99,15 @@ export default function LoginPage() {
                   className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                   required
                 />
-             </div>
+             </div> */}
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
+            {message && (
+              <p className="text-green-500 text-sm text-center">{message}</p>
+            )}
             <button type="submit" className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-blue-500/20">
-              Log In
+              Sign in with Magic Link
             </button>
           </form>
           <div className="my-6 flex items-center">
