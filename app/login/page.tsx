@@ -64,7 +64,7 @@ export default function LoginPage() {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://ai-assistant-rouge.vercel.app/callback',
+          emailRedirectTo: 'https://ai-assistant-rouge.vercel.app/login/callback',
         },
       });
 
