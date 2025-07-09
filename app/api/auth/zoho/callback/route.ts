@@ -111,33 +111,34 @@ export async function GET(request: NextRequest) {
     });
 
     if (linkError) {
-      return NextResponse.json({ error: linkError.message }, { status: 500 });
-    }
+      console.error('Error generating magic link:', linkError);
+      throw linkError;
+  }
 
-    return NextResponse.redirect(linkData.properties.action_link!, { status: 302 });
+    return NextResponse.redirect(linkData.properties.action_link, { status: 302 });
 
-    // 4. Mint a custom Supabase JWT to log the user into your portal
-    let supabaseJwt;
-    try {
-      supabaseJwt = jwt.sign(
-        {
-          aud: 'authenticated',
-          exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
-          sub: authUserId,
-          email: agentEmail,
-          role: 'authenticated',
-        },
-        process.env.SUPABASE_JWT_SECRET!
-      );
-    } catch (err) {
-      console.error('Error signing JWT:', err);
-      throw err;
-    }
+    // // 4. Mint a custom Supabase JWT to log the user into your portal
+    // let supabaseJwt;
+    // try {
+    //   supabaseJwt = jwt.sign(
+    //     {
+    //       aud: 'authenticated',
+    //       exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiry
+    //       sub: authUserId,
+    //       email: agentEmail,
+    //       role: 'authenticated',
+    //     },
+    //     process.env.SUPABASE_JWT_SECRET!
+    //   );
+    // } catch (err) {
+    //   console.error('Error signing JWT:', err);
+    //   throw err;
+    // }
 
-    // 5. Redirect user to a special client-side page to complete the login
-    const redirectUrl = new URL('/login/callback', baseUrl);
-    redirectUrl.searchParams.set('token', supabaseJwt);
-    return NextResponse.redirect(redirectUrl.toString());
+    // // 5. Redirect user to a special client-side page to complete the login
+    // const redirectUrl = new URL('/login/callback', baseUrl);
+    // redirectUrl.searchParams.set('token', supabaseJwt);
+    // return NextResponse.redirect(redirectUrl.toString());
 
   } catch (error) {
     console.error('Zoho Auth Callback Error:', error);
