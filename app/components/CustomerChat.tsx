@@ -173,6 +173,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
 
         const accessToken = session.access_token;
         const channel = modeToChannelMap[ticketDetails?.mode || ''] || 'EMAIL';
+        const to = ticketDetails?.email;
 
         const response = await fetch('/api/zoho/send-reply', {
           method: 'POST',
@@ -184,6 +185,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             ticketId: selectedTicketId,
             content: message,
             channel,
+            to,
             fromEmailAddress: "support@mystorage.zohodesk.com"
           }),
         });
