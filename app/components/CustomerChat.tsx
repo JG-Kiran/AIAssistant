@@ -8,7 +8,7 @@ import ChatLog from './ChatLog';
 import MessageInput from './MessageInput';
 import { convert } from 'html-to-text';
 import { Message } from 'ai';
-import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage } from '../lib/supabase';
+import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage, getUser } from '../lib/supabase';
 
 export interface ChatMessage {
   id: number;
@@ -184,6 +184,7 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
             ticketId: selectedTicketId,
             content: message,
             channel,
+            fromEmailAddress: null
           }),
         });
         const result = await response.json();
