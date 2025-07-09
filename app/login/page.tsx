@@ -98,7 +98,7 @@ export default function LoginPage() {
                   required
                 />
              </div>
-             <div>
+             {/* <div>
                 <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password (optional)</label>
                 <input
                   id="agent-password"
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 />
-             </div>
+             </div> */}
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
