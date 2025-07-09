@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       type: 'magiclink',
       email: agentEmail,
       options: {
-        redirectTo: `${baseUrl}/dashboard`,
+        redirectTo: 'https://ai-assistant-rouge.vercel.app/dashboard',
       }
     });
 
