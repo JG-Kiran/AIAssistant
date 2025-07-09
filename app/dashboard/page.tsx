@@ -14,11 +14,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // If no user is logged in, redirect to the login page
-        router.push('/login');
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Error getting user:', error);
       }
+      if (user) {
+        console.log('✅ User is logged in:', user);
+        const session = await supabase.auth.getSession();
+        console.log('✅ Active Session:', session.data.session);
+    } else {
+      // If no user is logged in, redirect to the login page
+      console.warn('No active user found. Redirecting to /login.');
+      router.push('/login');
+    }
     };
 
     checkSession();
