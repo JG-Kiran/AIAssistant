@@ -24,18 +24,17 @@ export default function LoginPage() {
 
   const initializeSession = useSessionStore((state) => state.initializeSession);
   
+  // Cooridinate between different tabs
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'auth_complete' && event.newValue === 'true') {
         // Auth is done, remove the item and redirect
-          localStorage.removeItem('auth_complete');
-          router.push('/dashboard');
+        localStorage.removeItem('auth_complete');
+        router.push('/dashboard');
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
-    
-    // Cleanup the event listener
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };

@@ -40,7 +40,6 @@ export default function MainPage() {
         }
       } catch (error) {
         console.error('Authentication error:', error);
-        // On error, redirect to login
         router.push('/login?error=auth_error');
       } finally {
         setLoading(false);
@@ -56,9 +55,8 @@ export default function MainPage() {
       }
     });
 
-    // Run the auth check
     handleAuth();
-    // Cleanup subscription
+
     return () => {
       subscription?.unsubscribe();
     };
@@ -73,7 +71,6 @@ export default function MainPage() {
     );
   }
 
-  // This won't typically render as redirects happen in useEffect
   return (
     <div>Redirecting...</div>
   );

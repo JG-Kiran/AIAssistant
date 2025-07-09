@@ -30,13 +30,18 @@ export default function AuthCallback() {
 
   if (authComplete) {
     return (
-      <div className="auth-success">
-        <h2>Successfully signed in!</h2>
-        <p>You can close this tab and return to the application.</p>
-        <p>Or click below to open the dashboard:</p>
-        <button onClick={() => window.location.href = '/dashboard'}>
-          Go to Dashboard
-        </button>
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
+        <div className="bg-white rounded-xl shadow-lg p-10 flex flex-col items-center gap-4 max-w-md w-full">
+          <h2 className="text-2xl font-bold text-green-600">Successfully signed in!</h2>
+          <p className="text-slate-700 text-center">You can close this tab and return to the application.</p>
+          <p className="text-slate-500 text-center">Or click below to open the dashboard:</p>
+          <button
+            className="mt-2 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+            onClick={() => window.location.href = '/dashboard'}
+          >
+            Go to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
