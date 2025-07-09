@@ -30,7 +30,10 @@ export default function LoginPage() {
       if (event.key === 'auth_complete' && event.newValue === 'true') {
         // Auth is done, remove the item and redirect
         localStorage.removeItem('auth_complete');
-        router.push('/dashboard');
+        initializeSession().then(() => {
+          console.log('Session refreshed. Redirecting to dashboard.');
+          router.push('/dashboard');
+        });
       }
     };
     
