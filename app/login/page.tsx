@@ -18,8 +18,8 @@ const SparklesIcon = ({ className }: { className: string }) => (
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const router = useRouter();
 
   const initializeSession = useSessionStore((state) => state.initializeSession);
@@ -27,25 +27,35 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
 
-    // const { error: signInError } = await supabase.auth.signInWithOtp({
-    //   email,
-    //   options: {
-    //     emailRedirectTo: `${window.location.origin}/dashboard`,
-    //   },
-    // });
+    if (password) {
+      // --- Password Login Flow ---
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
+      if (signInError) {
+        setError(signInError.message);
+      } else {
+        await initializeSession();
+        router.push('/dashboard');
+      }
     } else {
-      // setMessage('Check your email for the login link!');
-      await initializeSession();
-      router.push('/dashboard');
+      // --- Email-only (Magic Link) Flow ---
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (otpError) {
+        setError(otpError.message);
+      } else {
+        setMessage('Check your email for the magic login link!');
+      }
     }
   };
 
@@ -89,25 +99,24 @@ export default function LoginPage() {
                 />
              </div>
              <div>
-                <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password (optional)</label>
                 <input
                   id="agent-password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Leave blank for magic link"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  required
                 />
              </div>
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
-            {/* {message && (
+             {message && (
               <p className="text-green-500 text-sm text-center">{message}</p>
-            )} */}
+            )}
             <button type="submit" className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-blue-500/20">
-              Log in
+              Sign In
             </button>
           </form>
           <div className="my-6 flex items-center">
