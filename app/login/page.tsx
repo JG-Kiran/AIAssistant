@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { useSessionStore } from '../stores/useSessionStore';
@@ -24,6 +24,23 @@ export default function LoginPage() {
 
   const initializeSession = useSessionStore((state) => state.initializeSession);
   
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'auth_complete' && event.newValue === 'true') {
+        // Auth is done, remove the item and redirect
+          localStorage.removeItem('auth_complete');
+          router.push('/dashboard');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Cleanup the event listener
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -47,7 +64,7 @@ export default function LoginPage() {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://ai-assistant-rouge.vercel.app',
+          emailRedirectTo: 'https://ai-assistant-rouge.vercel.app/callback',
         },
       });
 
