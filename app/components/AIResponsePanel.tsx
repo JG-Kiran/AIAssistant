@@ -153,7 +153,7 @@ export default function AIResponsePanel({
   };
 
   return (
-    <aside className="w-full max-w-sm h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
+    <aside className="w-full h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
       <div className="flex flex-col flex-grow min-h-0">
         <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
           <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant

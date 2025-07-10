@@ -153,7 +153,7 @@ export default function CustomerChat({
 
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
-      <div className="flex-[2] flex flex-col p-4">
+      <div className="flex-[2] flex flex-col p-4 overflow-hidden">
         <header className="border-b-2 border-slate-100 pb-4 mb-4">
           <h2 className="text-2xl font-bold text-slate-800">
             {ticketDetails?.contact_name || 'Customer'}

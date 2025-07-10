@@ -71,7 +71,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   return (
-    <section className="w-1/4 bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
+    <section className="bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="pr-4">
         <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
@@ -91,12 +91,12 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         >
           My Tickets
         </button>
-        <button
+        {/* <button
           onClick={() => setFilters({ view: 'unassigned' })}
           className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unassigned' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
           Unassigned
-        </button>
+        </button> */}
       </div>
 
       {/* Search and Filter Section */}
@@ -153,7 +153,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
       </div>
 
       {/* Ticket List */}
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-y-auto mr-1 flex-1">
         <ul>
           {tickets.map((ticket, index) => (
             <li
