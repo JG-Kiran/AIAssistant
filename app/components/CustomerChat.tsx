@@ -23,6 +23,8 @@ export interface TicketDetails {
   ticket_reference_id?: string;
   mode?: string;
   email?: string;
+  description?: string;
+  created_time?: string;
 }
 
 export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
@@ -83,13 +85,30 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     if (!selectedTicketId) return [];
     
     const rawMessages = threadsByTicketId.get(selectedTicketId) || [];
-
     
-    return rawMessages.map(msg => ({
+    const processedMessages = rawMessages.map(msg => ({
       ...msg,
       message: convert(msg.message || '', { wordwrap: 130 }),
     }));
-  }, [threadsByTicketId, selectedTicketId]);
+
+    // If we have ticket details with a description, add it as the first message (customer message)
+    if (ticketDetails?.description) {
+      const descriptionMessage: Thread = {
+        id: 0, // Use 0 as ID for the description message to ensure it stays at top
+        ticket_id: selectedTicketId,
+        ticket_reference_id: selectedTicketId,
+        message: convert(ticketDetails.description, { wordwrap: 130 }),
+        author_type: 'CUSTOMER' as const,
+        direction: 'in' as const,
+        author_name: ticketDetails.contact_name || 'Customer',
+        created_time: ticketDetails.created_time || new Date().toISOString(),
+      };
+      
+      return [descriptionMessage, ...processedMessages];
+    }
+    
+    return processedMessages;
+  }, [threadsByTicketId, selectedTicketId, ticketDetails]);
 
   useEffect(() => {
     const fetchTicketDetails = async () => {
