@@ -3,8 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useSessionStore } from '../stores/useSessionStore';
-import { supabase } from '../lib/supabase';
+import { useSessionStore } from '../../stores/useSessionStore';
+import { supabase } from '../../lib/supabase';
 
 // A simple loading spinner component
 const LoadingSpinner = () => (

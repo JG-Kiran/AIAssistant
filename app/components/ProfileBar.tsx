@@ -64,7 +64,7 @@ export default function ProfileBar() {
             </button>
             <button
               onClick={() => {
-                router.push('/profile');
+                router.push('/dashboard/profile');
                 setIsOpen(false);
               }}
               className="w-full text-left px-4 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 font-medium transition-colors"
