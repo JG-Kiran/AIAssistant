@@ -22,16 +22,10 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
-  const searchParams = useSearchParams();
   const initializeSession = useSessionStore((state) => state.initializeSession);
   
   // Handle specific errors from the URL and tab coordination
   useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam === 'unauthorized_department') {
-      setError('Your Zoho account is not part of the authorized sales department. Please contact your administrator.');
-    }
-
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'auth_complete' && event.newValue === 'true') {
         localStorage.removeItem('auth_complete');
@@ -46,7 +40,7 @@ export default function LoginPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [searchParams, router, initializeSession]);
+  }, [router, initializeSession]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
