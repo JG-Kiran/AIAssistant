@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { convert } from 'html-to-text';
 
 export type Thread = {
   id: number;
@@ -18,7 +19,9 @@ export type Ticket = {
   contact_name: string;
   mode: string;
   modified_time: string;
-  // Add any other ticket fields you need for display
+  status: string | null;
+  description: string | null;
+  created_time: string;
 };
 
 export type TicketFilters = { 
@@ -40,7 +43,7 @@ interface RealtimeState {
   filters: TicketFilters;
   initialize: () => void;
   close: () => void;
-  setInitialThreadsForTicket: (ticketId: string, threads: Thread[]) => void;
+  setInitialThreadsForTicket: (ticketId: string, threads: Thread[], ticketDetails: Ticket) => void;
   setFilters: (newFilters: Partial<TicketFilters>) => void;
   fetchTickets: (pageToFetch?: number) => Promise<void>;
   loadMoreTickets: () => void;
@@ -132,10 +135,27 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   },
 
   // This action will set the initial, fetched messages for a ticket.
-  setInitialThreadsForTicket: (ticketId, threads) => {
+  setInitialThreadsForTicket: (ticketId, threads, ticketDetails) => {
     set(state => {
       const newMap = new Map(state.threadsByTicketId);
-      newMap.set(ticketId, threads);
+      let finalMessages = threads.map(msg => ({
+        ...msg,
+        message: convert(msg.message || '', { wordwrap: 130 }),
+      }));
+      if (ticketDetails?.description) {
+        const descriptionMessage: Thread = {
+          id: 0,
+          ticket_id: ticketId,
+          ticket_reference_id: ticketId,
+          message: convert(ticketDetails.description, { wordwrap: 130 }),
+          author_type: 'CUSTOMER',
+          direction: 'in',
+          author_name: ticketDetails.contact_name || 'Customer',
+          created_time: ticketDetails.created_time,
+        };
+        finalMessages = [descriptionMessage, ...finalMessages];
+      }
+      newMap.set(ticketId, finalMessages);
       return { threadsByTicketId: newMap };
     });
   },
@@ -191,10 +211,11 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     }
 
     if (data) {
+      const newTickets = data as Ticket[];
       set(state => ({
         // If it's the first page, replace the tickets. Otherwise, append them.
-        tickets: pageToFetch === 0 ? data : [...state.tickets, ...data],
-        hasMoreTickets: data.length === ITEMS_PER_PAGE,
+        tickets: pageToFetch === 0 ? newTickets : [...state.tickets, ...newTickets],
+        hasMoreTickets: newTickets.length === ITEMS_PER_PAGE,
         page: pageToFetch,
       }));
     }

@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
-import AIResponsePanel from './AIResponsePanel';
-import { useRealtimeStore, Thread } from '../stores/useRealtimeStore';
+import { useRealtimeStore } from '../stores/useRealtimeStore';
 import ChatLog from './ChatLog';
 import MessageInput from './MessageInput';
-import { convert } from 'html-to-text';
 
 export interface ChatMessage {
   id: number;
@@ -25,30 +23,40 @@ export interface TicketDetails {
   created_time?: string;
 }
 
-export default function CustomerChat({ selectedTicketId }: { selectedTicketId: string | null }) {
-  const [message, setMessage] = useState('');
+export default function CustomerChat({ 
+  selectedTicketId,
+  message,
+  setMessage,
+}: { 
+  selectedTicketId: string | null,
+  message: string,
+  setMessage: (value: string) => void,
+}) {
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
 
   // This effect now fetches initial messages and puts them in the GLOBAL store
   useEffect(() => {
-    const fetchAndSetData = async () => {
-      if (!selectedTicketId) {
-        return;
-      }
-      
-      // 1. Fetch H2H messages (existing logic)
-      const { data: data, error: error } = await supabase
-        .from('threads')
-        .select('*')
-        .eq('ticket_reference_id', selectedTicketId)
-        .order('created_time', { ascending: true });
+    if (!selectedTicketId) return;
 
-      if (error) {
-        console.error('Error fetching H2H messages:', error);
-      } else {
-        setInitialThreadsForTicket(selectedTicketId, data as Thread[]);
+    const fetchAndSetData = async () => {  
+      const [threadsRes, ticketRes] = await Promise.all([
+        supabase
+          .from('threads')
+          .select('*')
+          .eq('ticket_reference_id', selectedTicketId)
+          .order('created_time', { ascending: true }),
+        supabase
+          .from('tickets')
+          .select('*')
+          .eq('ticket_reference_id', selectedTicketId)
+          .single()
+      ]);
+
+      if (ticketRes.data && threadsRes.data) {
+        setTicketDetails(ticketRes.data);
+        setInitialThreadsForTicket(selectedTicketId, threadsRes.data, ticketRes.data);
       }
     };
     fetchAndSetData();
@@ -57,40 +65,15 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
   // Use useMemo to efficiently get the messages for the currently selected ticket.
   const messagesForThisTicket = useMemo(() => {
     if (!selectedTicketId) return [];
-    
-    const rawMessages = threadsByTicketId.get(selectedTicketId) || [];
-    
-    const processedMessages = rawMessages.map(msg => ({
-      ...msg,
-      message: convert(msg.message || '', { wordwrap: 130 }),
-    }));
-
-    // If we have ticket details with a description, add it as the first message (customer message)
-    if (ticketDetails?.description) {
-      const descriptionMessage: Thread = {
-        id: 0, // Use 0 as ID for the description message to ensure it stays at top
-        ticket_id: selectedTicketId,
-        ticket_reference_id: selectedTicketId,
-        message: convert(ticketDetails.description, { wordwrap: 130 }),
-        author_type: 'CUSTOMER' as const,
-        direction: 'in' as const,
-        author_name: ticketDetails.contact_name || 'Customer',
-        created_time: ticketDetails.created_time || new Date().toISOString(),
-      };
-      
-      return [descriptionMessage, ...processedMessages];
-    }
-    
-    return processedMessages;
-  }, [threadsByTicketId, selectedTicketId, ticketDetails]);
+    return threadsByTicketId.get(selectedTicketId) || [];
+  }, [threadsByTicketId, selectedTicketId]);
 
   useEffect(() => {
-    const fetchTicketDetails = async () => {
-      if (!selectedTicketId) {
-        setTicketDetails(null);
-        return;
-      }
-
+    if (!selectedTicketId) {
+      setTicketDetails(null);
+      return;
+    }
+    const fetchTicketDetails = async () => { 
       const { data, error } = await supabase
         .from('tickets')
         .select('*')
@@ -104,11 +87,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
       setTicketDetails(data);
     };
     fetchTicketDetails();
-  }, [selectedTicketId]);
-
-  // Clear message box when chat opened
-  useEffect(() => {
-    setMessage('');
   }, [selectedTicketId]);
 
   // Autoscroll to bottom when chat opened (Using Zustand)
@@ -173,15 +151,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
     }
   };
 
-  const h2hContext = useMemo(() => {
-    return messagesForThisTicket
-      .map(msg => {
-        const author = (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'Agent' : 'Customer');
-        return `${author}: ${msg.message || ''}`;
-      })
-      .join('\n');
-  }, [messagesForThisTicket]);
-
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
       <div className="flex-[2] flex flex-col p-4">
@@ -192,16 +161,17 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
           {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
         </header>
 
-        <div className="flex-1 overflow-y-auto mb-4 p-4 bg-slate-50 rounded-lg">
+        <div className="flex-1 overflow-y-auto mb-4 bg-slate-50 rounded-lg">
           {selectedTicketId === null ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-slate-500 text-lg">Select a ticket to view the conversation.</p>
+            <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
+              <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
+              <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
             </div>
           ) : (
-            <>
+            <div className="p-4">
               <ChatLog messages={messagesForThisTicket} />
               <div ref={chatEndRef} />
-            </>
+            </div>
           )}
         </div>
 
@@ -213,12 +183,6 @@ export default function CustomerChat({ selectedTicketId }: { selectedTicketId: s
         />
         )}
       </div>
-
-      <AIResponsePanel
-        h2hChatId={selectedTicketId}
-        h2hContext={h2hContext}
-        onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)} 
-      />
     </section>
 );
 } 

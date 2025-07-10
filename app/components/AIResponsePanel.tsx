@@ -2,8 +2,9 @@
 
 import { useChat } from '@ai-sdk/react';
 import type { Message } from 'ai';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
+import { useRealtimeStore } from '../stores/useRealtimeStore';
 import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage, supabase } from '../lib/supabase';
 
 
@@ -35,28 +36,37 @@ const EmptyStatePanel = () => (
 
 export default function AIResponsePanel({
   h2hChatId,
-  h2hContext,
   onSelectSuggestion,
 }: {
   h2hChatId: string | null;
-  h2hContext: string;
   onSelectSuggestion: (suggestion: string) => void;
 }) {
   const agentProfile = useSessionStore((state) => state.agentProfile);
   const agentName = agentProfile?.name || 'Agent';
   const [copySuccess, setCopySuccess] = useState('');
+  const { threadsByTicketId } = useRealtimeStore();
 
   const {
-    messages, setMessages, // Expose setMessages to manually update the chat
+    messages, setMessages,
     input, setInput,
     handleSubmit, append,
     isLoading, error,
   } = useChat({
     api: '/api/copilot',
     id: h2hChatId || undefined,
-    // initialMessages are now fetched below, not passed as a prop
   });
 
+  const h2hContext = useMemo(() => {
+    if (!h2hChatId) return '';
+    const messages = threadsByTicketId.get(h2hChatId) || [];
+    return messages
+        .map(msg => {
+            const author = (msg.author_type === 'AGENT' || msg.direction === 'out' ? 'Agent' : 'Customer');
+            return `${author}: ${msg.message || ''}`;
+        })
+        .join('\n');
+  }, [threadsByTicketId, h2hChatId]);
+  
   // Data fetching logic
   useEffect(() => {
     if (!h2hChatId) {

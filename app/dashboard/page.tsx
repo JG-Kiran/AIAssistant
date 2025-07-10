@@ -1,16 +1,28 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect} from "react";
 import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabase';
+import { useSessionStore } from "../stores/useSessionStore";
 
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
 import CustomerChat from "../components/CustomerChat";
+import AIResponsePanel from "../components/AIResponsePanel";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const { user, isLoading } = useSessionStore();
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+    // When the selected ticket changes, clear the message input box.
+    setMessage(''); 
+  }, [isLoading, user, router, selectedTicketId]);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -35,11 +47,20 @@ export default function DashboardPage() {
 
   return (
     <main className="flex flex-row h-screen w-screen overflow-hidden bg-gray-50">  
-        <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
-        <div className="flex-1 flex flex-col">
-            <CustomerChat selectedTicketId={selectedTicketId}/>
-        </div>
-        <ProfileBar />
+      <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
+
+      <CustomerChat
+        selectedTicketId={selectedTicketId}
+        message={message}
+        setMessage={setMessage}
+      />
+
+      <AIResponsePanel
+        h2hChatId={selectedTicketId}
+        onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)}
+      />
+
+      <ProfileBar />
     </main>
   );
 }
