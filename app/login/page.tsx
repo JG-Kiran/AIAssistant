@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { useSessionStore } from '../stores/useSessionStore';
 
@@ -18,17 +18,22 @@ const SparklesIcon = ({ className }: { className: string }) => (
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const router = useRouter();
-
+  const searchParams = useSearchParams();
   const initializeSession = useSessionStore((state) => state.initializeSession);
   
-  // Cooridinate between different tabs
+  // Handle specific errors from the URL and tab coordination
   useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'unauthorized_department') {
+      setError('Your Zoho account is not part of the authorized sales department. Please contact your administrator.');
+    }
+
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'auth_complete' && event.newValue === 'true') {
-        // Auth is done, remove the item and redirect
         localStorage.removeItem('auth_complete');
         initializeSession().then(() => {
           console.log('Session refreshed. Redirecting to dashboard.');
@@ -41,12 +46,13 @@ export default function LoginPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [router]);
+  }, [searchParams, router, initializeSession]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setMessage('');
+    setLoading(true);
 
     if (password) {
       // --- Password Login Flow ---
@@ -75,6 +81,7 @@ export default function LoginPage() {
       } else {
         setMessage('Check your email for the magic login link!');
       }
+      setLoading(false);
     }
   };
 
@@ -97,59 +104,67 @@ export default function LoginPage() {
       </div>
 
       {/* Form Column */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-100">
         <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-slate-800">Agent Login</h2>
             <p className="text-slate-500">Sign in to continue to the dashboard</p>
           </div>
           
+          {/* Zoho login */}
+          <a
+            href="/api/auth/zoho/login"
+            className="w-full flex items-center justify-center gap-3 bg-red-600 border border-red-700 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition"
+          >
+            <ZohoIcon />
+            <span className="font-semibold">Log in with Zoho Desk</span>
+          </a>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-slate-300"></div>
+            <span className="flex-shrink mx-4 text-slate-400">OR</span>
+            <div className="flex-grow border-t border-slate-300"></div>
+          </div>
+
+          {/* Email Login */}
           <form onSubmit={handleLogin} className="space-y-6">
-             <div>
-                <label htmlFor="agent-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input
-                  id="agent-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  required
-                />
-             </div>
-              {/* <div>
-                <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password (optional)</label>
-                <input
-                  id="agent-password"
-                  type="password"
-                  placeholder="Leave blank for magic link"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-             </div>  */}
+            <div>
+              <label htmlFor="agent-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <input
+                id="agent-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                required
+              />
+            </div>
+            {/* <div>
+              <label htmlFor="agent-password" className="block text-sm font-medium text-slate-700 mb-1">Password (optional)</label>
+              <input
+                id="agent-password"
+                type="password"
+                placeholder="Leave blank for magic link"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="border border-slate-300 p-3 w-full rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              />
+            </div>  */}
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
              {message && (
               <p className="text-green-500 text-sm text-center">{message}</p>
             )}
-            <button type="submit" className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-blue-500/20">
-              Sign In
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="bg-blue-600 text-white p-3 w-full rounded-lg hover:bg-blue-700 transition font-semibold shadow-md shadow-slate-500/20 disabled:opacity-50"
+            >
+              {loading ? 'Sending...' : 'Send Email Link'}
             </button>
           </form>
-          <div className="my-6 flex items-center">
-              <div className="flex-grow border-t border-slate-300"></div>
-              <span className="flex-shrink mx-4 text-slate-400">OR</span>
-              <div className="flex-grow border-t border-slate-300"></div>
-          </div>
-          <a
-              href="/api/auth/zoho/login"
-              className="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
-          >
-              <ZohoIcon />
-              <span className="font-semibold">Log in with Zoho Desk</span>
-          </a>
         </div>
       </div>
     </div>
