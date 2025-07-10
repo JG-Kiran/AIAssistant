@@ -119,35 +119,6 @@ export default function AIResponsePanel({
     prevIsLoadingRef.current = isLoading;
   }, [isLoading, messages]);
 
-  // Reset chat when switching conversations
-  // useEffect(() => {
-  //   const hasChatChanged = prevH2hChatIdRef.current !== h2hChatId;
-
-  //   // This condition is the key. We only sync with the parent's state if:
-  //   // 1. The chat conversation has actually changed.
-  //   // OR
-  //   // 2. The list of messages from the parent is not empty.
-  //   if (hasChatChanged || (initialH2aMessages && initialH2aMessages.length > 0)) {
-  //       if (recentlyDeleted.current && initialH2aMessages.some(m => m.id === recentlyDeleted.current)) {
-  //           setMessages(initialH2aMessages.filter(m => m.id !== recentlyDeleted.current));
-  //       } else {
-  //           setMessages(initialH2aMessages);
-  //       }
-  //     }
-  //   // If the chat has NOT changed and the initial messages are empty, we do nothing,
-  //   // thus ignoring the temporary loading state from the parent.
-
-  //   // Update refs for the next render cycle.
-  //   prevH2hChatIdRef.current = h2hChatId;
-  //   recentlyDeleted.current = null;
-  //   // If the chat has NOT changed and the initial messages are empty, we do nothing,
-  //   // thus ignoring the temporary loading state from the parent.
-
-  //   // Update refs for the next render cycle.
-  //   prevH2hChatIdRef.current = h2hChatId;
-  //   recentlyDeleted.current = null;
-  // }, [h2hChatId, initialH2aMessages, setMessages]);
-
   const handleQuickGeneration = () => {
     append({
         role: 'user',
