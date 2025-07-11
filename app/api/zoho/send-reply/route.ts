@@ -83,13 +83,16 @@ export async function POST(request: NextRequest) {
 
     // Send reply to Zoho Desk
     const url = `https://desk.zoho.com/api/v1/tickets/${ticketId}/sendReply`;
+    const bodyContent = channel === 'ZALO_OA_4' ?
+      { channel, content, fromEmailAddress } :
+      { channel, content, to, fromEmailAddress };
     const zohoResponse = await fetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ channel, content, to, fromEmailAddress })
+      body: JSON.stringify(bodyContent)
     });
 
     if (!zohoResponse.ok) {
