@@ -26,7 +26,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   // Get state and actions from the Zustand store
-  const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets } = useRealtimeStore();
+  const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
   // Debounce the search text to prevent excessive API calls
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
@@ -52,10 +52,15 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     if (node) observer.current.observe(node);
   }, [hasMoreTickets, loadMoreTickets]);
 
-  const handleSelectTicket = (id: string) => {
+  const handleSelectTicket = async (id: string) => {
     onSelectTicket(id);
     setSelectedTicket(id);
+    // Mark ticket as read when selected
+    await markTicketAsRead(id);
   }
+
+  // Calculate unread count
+  const unreadCount = tickets.filter(ticket => ticket.isUnread).length;
 
   const formatMessageTime = (timestamp: string | undefined) => {
     if (!timestamp) return '';
@@ -74,7 +79,14 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     <section className="bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="pr-4">
-        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
+        <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
+          <h2 className="text-2xl font-bold text-slate-800">Conversations</h2>
+          {unreadCount > 0 && (
+            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+              {unreadCount} unread
+            </span>
+          )}
+        </div>
       </div>
 
       {/* --- Filter buttons --- */}
@@ -90,6 +102,12 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
           className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
           My Tickets
+        </button>
+        <button
+          onClick={() => setFilters({ view: 'unread' })}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unread' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Unread
         </button>
         {/* <button
           onClick={() => setFilters({ view: 'unassigned' })}
@@ -159,12 +177,31 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             <li
               ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${
+                selectedTicket === ticket.ticket_reference_id 
+                  ? 'bg-blue-500 text-white' 
+                  : ticket.isUnread 
+                    ? 'bg-blue-50 border-l-4 border-blue-500 hover:bg-blue-100' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+              }`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-center">
                 <div className="flex-1">
-                  <h3 className={`font-medium ${selectedTicket === ticket.ticket_reference_id ? 'text-white' : 'text-gray-800'}`}>{ticket.contact_name}</h3>
+                  <div className="flex items-center">
+                    <h3 className={`font-medium ${
+                      selectedTicket === ticket.ticket_reference_id 
+                        ? 'text-white' 
+                        : ticket.isUnread 
+                          ? 'text-gray-900 font-semibold' 
+                          : 'text-gray-800'
+                    }`}>
+                      {ticket.contact_name}
+                    </h3>
+                    {ticket.isUnread && selectedTicket !== ticket.ticket_reference_id && (
+                      <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
+                    )}
+                  </div>
                   {/* <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p> */}
                   {ticket.mode && (
                     <p className={`text-xs px-2 py-1 mt-1 inline-block rounded-full ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-600'}`}>

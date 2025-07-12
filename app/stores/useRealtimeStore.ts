@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, getUserName } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { convert } from 'html-to-text';
 
@@ -22,13 +22,14 @@ export type Ticket = {
   status: string | null;
   description: string | null;
   created_time: string;
+  isUnread: boolean;
 };
 
 export type TicketFilters = { 
   searchText: string; 
   searchType: 'name' | 'reference'; 
   modeFilter: string; 
-  view: 'all' | 'my-tickets' | 'unassigned';
+  view: 'all' | 'my-tickets' | 'unassigned' | 'unread';
 };
 
 
@@ -47,6 +48,7 @@ interface RealtimeState {
   setFilters: (newFilters: Partial<TicketFilters>) => void;
   fetchTickets: (pageToFetch?: number) => Promise<void>;
   loadMoreTickets: () => void;
+  markTicketAsRead: (ticketId: string) => Promise<void>;
 }
 
 export const useRealtimeStore = create<RealtimeState>((set, get) => ({
@@ -94,10 +96,14 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
             const existingThreads = newMap.get(newThread.ticket_reference_id) || [];
             newMap.set(newThread.ticket_reference_id, [...existingThreads, newThread]);
 
-            // Move the updated ticket to the top
+            // Move the updated ticket to the top and mark as unread
             const newTickets = state.tickets.map(ticket => 
               ticket.ticket_reference_id === newThread.ticket_reference_id
-                ? { ...ticket, modified_time: newThread.created_time } // Update timestamp
+                ? { 
+                    ...ticket, 
+                    modified_time: newThread.created_time, // Update timestamp
+                    isUnread: true // Mark as unread when new message arrives
+                  }
                 : ticket
             );
             // Re-sort the tickets array by the new modified_time
@@ -113,6 +119,33 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         (payload) => {
           console.log('Ticket change received!', payload);
           get().fetchTickets(0); 
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chat_read' },
+        async (payload) => {
+          console.log('Chat read status change received!', payload);
+          const currentUserName = await getUserName();
+          
+          // Only update if the change is for the current user
+          const newRecord = payload.new as any;
+          if (newRecord && newRecord.user === currentUserName) {
+            const ticketId = newRecord.ticket_reference_id;
+            const lastRead = newRecord.last_read;
+            
+            // Update local state
+            set(state => ({
+              tickets: state.tickets.map(ticket =>
+                ticket.ticket_reference_id === ticketId
+                  ? { 
+                      ...ticket, 
+                      isUnread: new Date(ticket.modified_time) > new Date(lastRead)
+                    }
+                  : ticket
+              )
+            }));
+          }
         }
       )
       .subscribe((status) => {
@@ -175,13 +208,28 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     const from = pageToFetch * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
 
+    // Get current user name for read status calculation
+    const currentUserName = await getUserName();
+    if (!currentUserName) {
+      console.error('Unable to get current user name');
+      return;
+    }
+
+    // Build query with LEFT JOIN to chat_read table
     let query = supabase
       .from('tickets')
-      .select('ticket_reference_id, contact_name, mode, modified_time', { count: 'exact' })
+      .select(`
+        ticket_reference_id, 
+        contact_name, 
+        mode, 
+        modified_time,
+        chat_read!left(last_read)
+      `, { count: 'exact' })
+      .eq('chat_read.user', currentUserName)
       .order('modified_time', { ascending: false })
       .range(from, to);
 
-    // Apply view filter (All, My Tickets, Unassigned)
+    // Apply view filter (All, My Tickets, Unassigned, Unread)
     if (filters.view === 'my-tickets') {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -211,7 +259,24 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     }
 
     if (data) {
-      const newTickets = data as Ticket[];
+      let newTickets = data.map((ticket: any) => ({
+        ticket_reference_id: ticket.ticket_reference_id,
+        contact_name: ticket.contact_name,
+        mode: ticket.mode,
+        modified_time: ticket.modified_time,
+        status: ticket.status,
+        description: ticket.description,
+        created_time: ticket.created_time,
+        isUnread: !ticket.chat_read || 
+                  !ticket.chat_read.last_read || 
+                  new Date(ticket.modified_time) > new Date(ticket.chat_read.last_read)
+      })) as Ticket[];
+      
+      // Apply unread filter if selected
+      if (filters.view === 'unread') {
+        newTickets = newTickets.filter(ticket => ticket.isUnread);
+      }
+      
       set(state => ({
         // If it's the first page, replace the tickets. Otherwise, append them.
         tickets: pageToFetch === 0 ? newTickets : [...state.tickets, ...newTickets],
@@ -225,6 +290,44 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     const { hasMoreTickets, page } = get();
     if (hasMoreTickets) {
       get().fetchTickets(page + 1);
+    }
+  },
+
+  markTicketAsRead: async (ticketId: string) => {
+    try {
+      const currentUserName = await getUserName();
+      if (!currentUserName) {
+        console.error('Unable to get current user name');
+        return;
+      }
+
+      // Upsert into chat_read table
+      const { error } = await supabase
+        .from('chat_read')
+        .upsert({
+          user: currentUserName,
+          ticket_reference_id: ticketId,
+          last_read: new Date().toISOString(),
+        }, {
+          onConflict: 'user,ticket_reference_id'
+        });
+
+      if (error) {
+        console.error('Error marking ticket as read:', error);
+        return;
+      }
+
+      // Update local state to mark ticket as read
+      set(state => ({
+        tickets: state.tickets.map(ticket =>
+          ticket.ticket_reference_id === ticketId
+            ? { ...ticket, isUnread: false }
+            : ticket
+        )
+      }));
+
+    } catch (error) {
+      console.error('Error in markTicketAsRead:', error);
     }
   },
 }));
