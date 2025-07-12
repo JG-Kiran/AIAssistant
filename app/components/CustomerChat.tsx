@@ -152,37 +152,37 @@ export default function CustomerChat({
   };
 
   return (
-    <section className="flex flex-1 flex-row h-full bg-white">
-      <div className="flex-[2] flex flex-col p-4 overflow-hidden">
-        <header className="border-b-2 border-slate-100 pb-4 mb-4">
-          <h2 className="text-2xl font-bold text-slate-800">
-            {ticketDetails?.contact_name || 'Customer'}
-          </h2>
-          {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
-        </header>
+    <section className="flex flex-col h-full bg-white p-4 overflow-hidden">
+      <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
+        <h2 className="text-2xl font-bold text-slate-800">
+          {ticketDetails?.contact_name || 'Customer'}
+        </h2>
+        {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
+      </header>
 
-        <div className="flex-1 overflow-y-auto mb-4 bg-slate-50 rounded-lg">
-          {selectedTicketId === null ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
-              <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
-              <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
-            </div>
-          ) : (
-            <div className="p-4">
-              <ChatLog messages={messagesForThisTicket} />
-              <div ref={chatEndRef} />
-            </div>
-          )}
-        </div>
-
-        {selectedTicketId !== null && (
-          <MessageInput 
-            message={message}
-            setMessage={setMessage}
-            onSendMessage={handleSendMessage}
-        />
+      <div className="flex-1 overflow-y-auto mb-4 bg-slate-50 rounded-lg">
+        {selectedTicketId === null ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
+            <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
+            <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
+          </div>
+        ) : (
+          <div className="p-4">
+            <ChatLog messages={messagesForThisTicket} />
+            <div ref={chatEndRef} />
+          </div>
         )}
       </div>
+
+      {selectedTicketId !== null && (
+        <div className="mt-auto flex-shrink-0">
+          <MessageInput 
+          message={message}
+          setMessage={setMessage}
+          onSendMessage={handleSendMessage}
+          />
+        </div>
+      )}
     </section>
 );
 } 

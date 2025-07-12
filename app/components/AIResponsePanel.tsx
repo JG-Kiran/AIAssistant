@@ -153,21 +153,22 @@ export default function AIResponsePanel({
   };
 
   return (
-    <aside className="w-full h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
-      <div className="flex flex-col flex-grow min-h-0">
-        <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
-          <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
-        </h3>
+    <aside className="w-full h-full flex flex-col min-h-0 bg-slate-50 border-l border-slate-200 ">
+        {/* Header */}
+        <div className=" flex-shrink-0 p-3 pb-2">
+          <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+            <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+          </h3>
+        </div>
 
-        {messages.length > 0 && (
+        {/* {messages.length > 0 && (
           <button onClick={handleClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
             Clear Chat History
           </button>
-        )}
+        )} */}
     
-        {/* --- Response Area (Wrapper for scrolling) --- */}
-        <div className="flex-grow overflow-y-auto pr-1 mb-4">
-
+        {/* Chat Log */}
+        <div className="flex-1 overflow-y-auto p-2">
           {messages.length === 0 && !isLoading && <EmptyStatePanel />}
           
           <div className="flex flex-col gap-3">
@@ -190,20 +191,17 @@ export default function AIResponsePanel({
                     <button onClick={() => onSelectSuggestion(m.content)} className="flex-1 text-center py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-semibold text-sm transition">
                       Use Reply
                     </button>
-                    <button onClick={() => handleCopyToClipboard(m.content)} title="Copy to clipboard" className="p-2 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-lg transition">
-                      <CopyIcon className="h-5 w-5" />
-                    </button>
                   </div>
                 )}
               </div>
               {/* Delete message button (Agent & AI) */}
-              <button 
+              {/* <button 
                 onClick={() => handleDeleteMessage(m.id)} 
                 title="Delete message"
                 className="absolute -top-2 -right-2 p-1 bg-white rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity shadow"
               >
                 <TrashIcon className="h-4 w-4" />
-              </button>
+              </button> */}
             </div>
           ))}
           </div>
@@ -211,33 +209,30 @@ export default function AIResponsePanel({
           {copySuccess && <div className="text-center mt-2 text-sm font-semibold text-green-600">{copySuccess}</div>}
         </div>
 
-        <div className="border-t my-4 border-slate-200"></div>
-
         {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
-        
-        {/* --- Action Buttons (Footer) --- */}
-        <div className="mt-auto">
-          <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
-          {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
+
+      {/* --- Message and Action Buttons (Footer) --- */}
+      <div className="p-3 border-t bg-white flex-shrink-0">
+        <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2 mb-2 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+        {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
+        </button>
+
+        {/* --- Custom Prompt Input --- */}
+        <form onSubmit={handleCustomSubmit}>
+          <label htmlFor="ai-prompt" className="sr-only">Custom Prompt</label>
+          <textarea 
+            id="ai-prompt" 
+            rows={3} 
+            className="w-full p-2 border border-slate-300 rounded-lg" 
+            placeholder="Write a custom prompt..." 
+            value={input}
+            onChange={(e) => setInput(e.target.value)} 
+          />
+          <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
+            {isLoading ? 'Generating...' : 'Generate From Prompt'}
           </button>
+        </form>
 
-          {/* --- Custom Prompt Input --- */}
-          <form onSubmit={handleCustomSubmit}>
-            <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
-            <textarea 
-              id="ai-prompt" 
-              rows={3} 
-              className="w-full p-2 border border-slate-300 rounded-lg" 
-              placeholder="e.g., Politely decline their request..." 
-              value={input}
-              onChange={(e) => setInput(e.target.value)} 
-            />
-            <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
-              {isLoading ? 'Generating...' : 'Generate From Prompt'}
-            </button>
-          </form>
-
-        </div>
       </div>
     </aside>
   );
