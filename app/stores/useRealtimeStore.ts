@@ -223,9 +223,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         contact_name, 
         mode, 
         modified_time,
-        chat_read!left(last_read)
+        chat_read!left(last_read, "user")
       `, { count: 'exact' })
-      .eq('chat_read.user', currentUserName)
       .order('modified_time', { ascending: false })
       .range(from, to);
 
@@ -259,18 +258,23 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     }
 
     if (data) {
-      let newTickets = data.map((ticket: any) => ({
-        ticket_reference_id: ticket.ticket_reference_id,
-        contact_name: ticket.contact_name,
-        mode: ticket.mode,
-        modified_time: ticket.modified_time,
-        status: ticket.status,
-        description: ticket.description,
-        created_time: ticket.created_time,
-        isUnread: !ticket.chat_read || 
-                  !ticket.chat_read.last_read || 
-                  new Date(ticket.modified_time) > new Date(ticket.chat_read.last_read)
-      })) as Ticket[];
+      let newTickets = data.map((ticket: any) => {
+        // Find the chat_read record for the current user
+        const userReadRecord = ticket.chat_read?.find((read: any) => read.user === currentUserName);
+        
+        return {
+          ticket_reference_id: ticket.ticket_reference_id,
+          contact_name: ticket.contact_name,
+          mode: ticket.mode,
+          modified_time: ticket.modified_time,
+          status: ticket.status,
+          description: ticket.description,
+          created_time: ticket.created_time,
+          isUnread: !userReadRecord || 
+                    !userReadRecord.last_read || 
+                    new Date(ticket.modified_time) > new Date(userReadRecord.last_read)
+        };
+      }) as Ticket[];
       
       // Apply unread filter if selected
       if (filters.view === 'unread') {
