@@ -5,7 +5,7 @@ import type { Message } from 'ai';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
 import { useRealtimeStore } from '../stores/useRealtimeStore';
-import { saveH2AMessages, clearH2aChatHistory, deleteH2aMessage, supabase } from '../lib/supabase';
+import { saveH2AMessages, supabase } from '../lib/supabase';
 
 
 const SparklesIcon = ({ className }: { className: string }) => (
@@ -14,16 +14,13 @@ const SparklesIcon = ({ className }: { className: string }) => (
     <path d="M7 6a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H8a1 1 0 01-1-1V6z" />
   </svg>
 );
-const TrashIcon = ({ className }: { className: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
+
 const CopyIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
   </svg>
 );
+
 const EmptyStatePanel = () => (
   <div className="flex flex-col flex-grow items-center justify-center text-center p-4">
       <SparklesIcon className="w-16 h-16 text-slate-300 mb-4" />
@@ -104,21 +101,6 @@ export default function AIResponsePanel({
     saveH2AMessages(h2hChatId, messagesToSave);
   };
 
-  const handleClearChat = async () => {
-    if (!h2hChatId) return;
-    const success = await clearH2aChatHistory(h2hChatId);
-    if (success) {
-      setMessages([]); // Clear local state on success
-    }
-  };
-
-  const handleDeleteMessage = async (messageId: string) => {
-    const success = await deleteH2aMessage(messageId);
-    if (success) {
-      // Optimistically update the UI
-      setMessages(prev => prev.filter(msg => msg.id !== messageId));
-    }
-  };
   // --- Logic to save conversation on completion ---
   const prevIsLoadingRef = useRef<boolean>(false);
   useEffect(() => {
@@ -158,12 +140,6 @@ export default function AIResponsePanel({
         <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
           <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
         </h3>
-
-        {messages.length > 0 && (
-          <button onClick={handleClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
-            Clear Chat History
-          </button>
-        )}
     
         {/* --- Response Area (Wrapper for scrolling) --- */}
         <div className="flex-grow overflow-y-auto pr-1 mb-4">
@@ -172,7 +148,7 @@ export default function AIResponsePanel({
           
           <div className="flex flex-col gap-3">
           {messages.map(m => (
-            <div key={m.id} className="group relative">
+            <div key={m.id}>
               {/* Message bubble */}
               <div className={`p-3.5 rounded-lg shadow-sm text-sm ${ 
                 m.role === 'user' 
@@ -196,14 +172,6 @@ export default function AIResponsePanel({
                   </div>
                 )}
               </div>
-              {/* Delete message button (Agent & AI) */}
-              <button 
-                onClick={() => handleDeleteMessage(m.id)} 
-                title="Delete message"
-                className="absolute -top-2 -right-2 p-1 bg-white rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity shadow"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
             </div>
           ))}
           </div>
