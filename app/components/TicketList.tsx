@@ -59,8 +59,8 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     await markTicketAsRead(id);
   }
 
-  // Calculate unread count
-  const unreadCount = tickets.filter(ticket => ticket.isUnread).length;
+  // Calculate unread count (removed for now)
+  // const unreadCount = tickets.filter(ticket => ticket.isUnread).length;
 
   const formatMessageTime = (timestamp: string | undefined) => {
     if (!timestamp) return '';
@@ -79,14 +79,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     <section className="bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="pr-4">
-        <div className="flex items-center justify-between pb-2 border-b-2 border-slate-100">
-          <h2 className="text-2xl font-bold text-slate-800">Conversations</h2>
-          {unreadCount > 0 && (
-            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {unreadCount} unread
-            </span>
-          )}
-        </div>
+        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
       </div>
 
       {/* --- Filter buttons --- */}
@@ -181,7 +174,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                 selectedTicket === ticket.ticket_reference_id 
                   ? 'bg-blue-500 text-white' 
                   : ticket.isUnread 
-                    ? 'bg-blue-50 border-l-4 border-blue-500 hover:bg-blue-100' 
+                    ? 'bg-gray-100 border-l-4 border-blue-500 hover:bg-gray-200' 
                     : 'bg-gray-100 hover:bg-gray-200'
               }`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}

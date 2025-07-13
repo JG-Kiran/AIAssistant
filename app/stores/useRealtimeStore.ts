@@ -94,7 +94,14 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
             // Add new message to top 
             const newMap = new Map(state.threadsByTicketId);
             const existingThreads = newMap.get(newThread.ticket_reference_id) || [];
-            newMap.set(newThread.ticket_reference_id, [...existingThreads, newThread]);
+            
+            // Apply HTML-to-text conversion to new messages (same as initial messages)
+            const processedThread = {
+              ...newThread,
+              message: convert(newThread.message || '', { wordwrap: 130 }),
+            };
+            
+            newMap.set(newThread.ticket_reference_id, [...existingThreads, processedThread]);
 
             // Move the updated ticket to the top and mark as unread
             const newTickets = state.tickets.map(ticket => 
