@@ -18,7 +18,7 @@ export default function MessageInput({ message, setMessage, onSendMessage }: Mes
         <div className="flex h-auto border-t border-slate-200 pt-4">
             <textarea
                 placeholder="Type your message..."
-                className="flex-1 p-3 border border-slate-300 rounded-lg mr-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 p-3 border border-slate-300 rounded-lg mr-2 resize-vertical focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
