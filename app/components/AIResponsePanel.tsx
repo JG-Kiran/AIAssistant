@@ -9,9 +9,12 @@ import { saveH2AMessages, supabase } from '../lib/supabase';
 
 
 const SparklesIcon = ({ className }: { className: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm6 2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V4zM5 12a1 1 0 011-1h1a1 1 0 110 2H6a1 1 0 01-1-1zm6 1a1 1 0 00-1 1v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 00-1-1z" clipRule="evenodd" />
-    <path d="M7 6a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H8a1 1 0 01-1-1V6z" />
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20">
+    <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1z" clipRule="evenodd" fill="#ef4444" />
+    <path d="M11 4a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" fill="#eab308" />
+    <path d="M5 12a1 1 0 011-1h1a1 1 0 110 2H6a1 1 0 01-1-1z" fill="#22c55e" />
+    <path d="M11 13a1 1 0 00-1 1v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 00-1-1z" fill="#3b82f6" />
+    <path d="M7 6a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H8a1 1 0 01-1-1V6z" fill="#a855f7" />
   </svg>
 );
 
@@ -29,6 +32,12 @@ const EmptyStatePanel = () => (
           Generate a quick suggestion based on the conversation, or write a custom prompt below to get started.
       </p>
   </div>
+);
+
+const UpArrowIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+  </svg>
 );
 
 export default function AIResponsePanel({
@@ -138,7 +147,7 @@ export default function AIResponsePanel({
     <aside className="w-full h-full p-4 bg-slate-50 border-l border-slate-200 flex flex-col">
       <div className="flex flex-col flex-grow min-h-0">
         <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
-          <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+          <SparklesIcon className="h-6 w-6"/>AI Assistant
         </h3>
     
         {/* --- Response Area (Wrapper for scrolling) --- */}
@@ -153,7 +162,7 @@ export default function AIResponsePanel({
               <div className={`p-3.5 rounded-lg shadow-sm text-sm ${ 
                 m.role === 'user' 
                   ? 'bg-white border border-slate-200 text-slate-800' // Agent
-                  : 'bg-gradient-to-br from-purple-50 via-violet-50 to-blue-50 border border-purple-200 text-slate-900' // AI Assistant
+                  : 'bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 border border-blue-200 text-slate-900' // AI Assistant
               }`}>
                 <div className="font-bold text-slate-700 mb-1.5">
                   {m.role === 'user' ? agentName : 'AI Suggestion'}
@@ -162,8 +171,8 @@ export default function AIResponsePanel({
 
                 {/* Use reply and copy buttons for AI Responses */}
                 {m.role === 'assistant' && (
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-purple-200">
-                    <button onClick={() => onSelectSuggestion(m.content)} className="flex-1 text-center py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-semibold text-sm transition">
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-blue-200">
+                    <button onClick={() => onSelectSuggestion(m.content)} className="flex-1 text-center py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-semibold text-sm transition">
                       Use Reply
                     </button>
                     <button onClick={() => handleCopyToClipboard(m.content)} title="Copy to clipboard" className="p-2 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-lg transition">
@@ -185,24 +194,28 @@ export default function AIResponsePanel({
         
         {/* --- Action Buttons (Footer) --- */}
         <div className="mt-auto">
-          <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="mb-4 w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
-          {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
-          </button>
+          <div className="mb-4 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 to-blue-500 p-0.5 rounded-lg">
+            <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-md disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
+              {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
+            </button>
+          </div>
 
           {/* --- Custom Prompt Input --- */}
           <form onSubmit={handleCustomSubmit}>
             <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
-            <textarea 
-              id="ai-prompt" 
-              rows={3} 
-              className="w-full p-2 border border-slate-300 rounded-lg" 
-              placeholder="e.g., Politely decline their request..." 
-              value={input}
-              onChange={(e) => setInput(e.target.value)} 
-            />
-            <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="mt-2 w-full flex items-center justify-center px-4 py-2.5 bg-purple-600 text-white font-semibold rounded-lg disabled:opacity-60 transition hover:bg-purple-700 shadow-md">
-              {isLoading ? 'Generating...' : 'Generate From Prompt'}
-            </button>
+            <div className="flex gap-2">
+              <textarea 
+                id="ai-prompt" 
+                rows={3} 
+                className="flex-1 p-2 border border-slate-300 rounded-lg" 
+                placeholder="e.g., Politely decline their request..." 
+                value={input}
+                onChange={(e) => setInput(e.target.value)} 
+              />
+              <button type="submit" disabled={isLoading || !input.trim() || !h2hChatId} className="flex items-center justify-center px-3 py-2 bg-black text-white rounded-lg disabled:opacity-60 transition hover:bg-gray-800 shadow-md">
+                <UpArrowIcon className="h-5 w-5" />
+              </button>
+            </div>
           </form>
 
         </div>
