@@ -154,62 +154,63 @@ export default function AIResponsePanel({
 
   return (
     <aside className="w-full h-full flex flex-col min-h-0 bg-slate-50 border-l border-slate-200 ">
-        {/* Header */}
-        <div className=" flex-shrink-0 p-3 pb-2">
-          <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
-            <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
-          </h3>
-        </div>
+      {/* Header */}
+      <div className=" flex-shrink-0 p-3 pb-2">
+        <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+          <SparklesIcon className="h-6 w-6 text-purple-500"/>AI Assistant
+        </h3>
+      </div>
 
-        {/* {messages.length > 0 && (
-          <button onClick={handleClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
-            Clear Chat History
-          </button>
-        )} */}
-    
-        {/* Chat Log */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {messages.length === 0 && !isLoading && <EmptyStatePanel />}
-          
-          <div className="flex flex-col gap-3">
-          {messages.map(m => (
-            <div key={m.id} className="group relative">
-              {/* Message bubble */}
-              <div className={`p-3.5 rounded-lg shadow-sm text-sm ${ 
-                m.role === 'user' 
-                  ? 'bg-white border border-slate-200 text-slate-800' // Agent
-                  : 'bg-gradient-to-br from-purple-50 via-violet-50 to-blue-50 border border-purple-200 text-slate-900' // AI Assistant
-              }`}>
-                <div className="font-bold text-slate-700 mb-1.5">
-                  {m.role === 'user' ? agentName : 'AI Suggestion'}
-                </div>
-                {m.content}
-
-                {/* Use reply and copy buttons for AI Responses */}
-                {m.role === 'assistant' && (
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-purple-200">
-                    <button onClick={() => onSelectSuggestion(m.content)} className="flex-1 text-center py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-semibold text-sm transition">
-                      Use Reply
-                    </button>
-                  </div>
-                )}
+      {/* {messages.length > 0 && (
+        <button onClick={handleClearChat} className="mb-2 w-full text-center py-1.5 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition">
+          Clear Chat History
+        </button>
+      )} */}
+  
+      {/* Chat Log */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {messages.length === 0 && !isLoading && <EmptyStatePanel />}
+        
+        <div className="flex flex-col gap-3">
+        {messages.map(m => (
+          <div key={m.id} className="group relative">
+            {/* Message bubble */}
+            <div className={`p-3.5 rounded-lg shadow-sm text-sm ${ 
+              m.role === 'user' 
+                ? 'bg-white border border-slate-200 text-slate-800' // Agent
+                : 'bg-gradient-to-br from-purple-50 via-violet-50 to-blue-50 border border-purple-200 text-slate-900' // AI Assistant
+            }`}>
+              <div className="font-bold text-slate-700 mb-1.5">
+                {m.role === 'user' ? agentName : 'AI Suggestion'}
               </div>
-              {/* Delete message button (Agent & AI) */}
-              {/* <button 
-                onClick={() => handleDeleteMessage(m.id)} 
-                title="Delete message"
-                className="absolute -top-2 -right-2 p-1 bg-white rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity shadow"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button> */}
-            </div>
-          ))}
-          </div>
-          {isLoading && <div className="text-center p-4">Loading...</div>}
-          {copySuccess && <div className="text-center mt-2 text-sm font-semibold text-green-600">{copySuccess}</div>}
-        </div>
 
-        {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
+              {m.content}
+
+              {/* Use reply and copy buttons for AI Responses */}
+              {m.role === 'assistant' && (
+                <div className="flex items-center gap-2 mt-4 pt-3 border-t border-purple-200">
+                  <button onClick={() => onSelectSuggestion(m.content)} className="flex-1 text-center py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-semibold text-sm transition">
+                    Use Reply
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Delete message button (Agent & AI) */}
+            {/* <button 
+              onClick={() => handleDeleteMessage(m.id)} 
+              title="Delete message"
+              className="absolute -top-2 -right-2 p-1 bg-white rounded-full text-slate-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity shadow"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button> */}
+          </div>
+        ))}
+        </div>
+        {isLoading && <div className="text-center p-4">Loading...</div>}
+        {copySuccess && <div className="text-center mt-2 text-sm font-semibold text-green-600">{copySuccess}</div>}
+      </div>
+
+      {error && <p className="text-sm text-red-500 mb-4 text-center">{error.message}</p>}
 
       {/* --- Message and Action Buttons (Footer) --- */}
       <div className="p-3 border-t bg-white flex-shrink-0">

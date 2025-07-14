@@ -152,15 +152,15 @@ export default function CustomerChat({
   };
 
   return (
-    <section className="flex flex-col h-full bg-white p-4 overflow-hidden">
-      <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
+    <section className="flex flex-col h-full bg-white p-2 overflow-hidden">
+      <header className="border-b-2 border-slate-100 p-2 mb-2 flex-shrink-0">
         <h2 className="text-2xl font-bold text-slate-800">
           {ticketDetails?.contact_name || 'Customer'}
         </h2>
         {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
       </header>
 
-      <div className="flex-1 overflow-y-auto mb-4 bg-slate-50 rounded-lg">
+      <div className="flex-1 overflow-y-auto mb-2 bg-slate-50 rounded-lg">
         {selectedTicketId === null ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
             <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
@@ -175,7 +175,7 @@ export default function CustomerChat({
       </div>
 
       {selectedTicketId !== null && (
-        <div className="mt-auto flex-shrink-0">
+        <div className="flex-shrink-0">
           <MessageInput 
           message={message}
           setMessage={setMessage}

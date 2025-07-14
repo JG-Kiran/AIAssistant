@@ -1,22 +1,17 @@
 'use client';
 
 import { useState, useEffect} from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '../lib/supabase';
 import { useSessionStore } from "../stores/useSessionStore";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Drawer } from "vaul";
+import { motion, AnimatePresence } from 'framer-motion';
 
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
 import CustomerChat from "../components/CustomerChat";
 import AIResponsePanel from "../components/AIResponsePanel";
 
-const BackIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-  </svg>
-);
 const SparklesIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 20 20" fill="currentColor">
     <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm6 2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V4zM5 12a1 1 0 011-1h1a1 1 0 110 2H6a1 1 0 01-1-1zm6 1a1 1 0 00-1 1v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -26,11 +21,33 @@ const SparklesIcon = ({ className }: { className: string }) => (
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  
+  const selectedTicketId = searchParams.get('ticketId');
+  const isAiPanelOpen = searchParams.get('panel') === 'ai';
+
   const { user, isLoading } = useSessionStore();
   const [message, setMessage] = useState('');
-  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // When a ticket is selected, we update the URL
+  const handleSelectTicket = (ticketId: string) => {
+    router.push(`/dashboard?ticketId=${ticketId}`);
+  };
+
+  // When going back, we update the URL
+  const handleBackToTickets = () => {
+    router.push('/dashboard');
+  };
+
+  // When toggling the panel, we update the URL
+  const toggleAiPanel = () => {
+    if (isAiPanelOpen) {
+      router.push(`/dashboard?ticketId=${selectedTicketId}`);
+    } else {
+      router.push(`/dashboard?ticketId=${selectedTicketId}&panel=ai`);
+    }
+  };
+
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -63,11 +80,11 @@ export default function DashboardPage() {
 
   return (
     <main className="flex h-screen w-screen overflow-hidden bg-gray-50">
-      {/* Desktop Layout: Hidden on mobile */}
+      {/* ----- DESKTOP LAYOUT ----- */}
       <div className="hidden md:flex h-full w-full">
         <PanelGroup direction="horizontal">
           <Panel defaultSize={25} minSize={20}>
-            <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
+            <TicketList onSelectTicket={handleSelectTicket} />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
           <Panel defaultSize={50} minSize={30}>
@@ -81,63 +98,81 @@ export default function DashboardPage() {
           <Panel defaultSize={30} minSize={25}>
             <AIResponsePanel
               h2hChatId={selectedTicketId}
-              onSelectSuggestion={(s) => setMessage(prev => prev ? `${prev} ${s}` : s)}
+              onSelectSuggestion={(s) => setMessage(s)}
             />
           </Panel>
         </PanelGroup>
       </div>
 
-      {/* Mobile Layout: Hidden on medium screens and up */}
-      <Drawer.Root shouldScaleBackground>
-        <div className="md:hidden h-full w-full flex flex-col">
-          {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto">
+      {/* ----- MOBILE LAYOUT ----- */}
+      <div className="md:hidden h-full w-full flex flex-col">
+        {/* Main Content Area */}
+        <div className="flex-1 min-h-0 relative overflow-hidden">
+          {/* View Switcher (Chat or Ticket List) */}
+          <div className="absolute inset-0">
             {selectedTicketId ? (
-                <CustomerChat
-                  selectedTicketId={selectedTicketId}
-                  message={message}
-                  setMessage={setMessage}
-                />
+              <CustomerChat
+                selectedTicketId={selectedTicketId}
+                message={message}
+                setMessage={setMessage}
+              />
             ) : (
-              <TicketList onSelectTicket={(id) => setSelectedTicketId(id)} />
+              <TicketList onSelectTicket={handleSelectTicket} />
             )}
           </div>
 
-          {/* Mobile Bottom Taskbar */}
-          {selectedTicketId && (
-            <div className="h-16 bg-white/80 backdrop-blur-sm border-t border-gray-200 flex items-center justify-around flex-shrink-0 text-sm gap-2">
-              <button onClick={() => setSelectedTicketId(null)} className="flex items-center justify-center h-full w-1/2 text-slate-600 font-medium px-4">
-                <BackIcon />
-              </button>
-              <div className="w-px h-6 bg-gray-200"></div>
-              <Drawer.Trigger asChild>
-                <button className="flex items-center justify-center h-full w-1/2 text-purple-600 font-medium px-4">
-                  <SparklesIcon className="h-6 w-6" />
-                </button>
-              </Drawer.Trigger>
-            </div>
-          )}
+          {/* AI Panel */}
+          <div
+            className={`absolute inset-0 h-full bg-white z-20 transition-transform duration-500 ease-in-out ${
+              isAiPanelOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}
+          >
+            <AIResponsePanel
+              h2hChatId={selectedTicketId}
+              onSelectSuggestion={(s) => {
+                setMessage(s);
+                router.back();
+              }}
+            />
+          </div>
         </div>
 
-        {/* Mobile AI Panel */}
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-          <Drawer.Content className="bg-slate flex flex-col rounded-t-[10px] fixed bottom-0 left-0 right-0 max-h-[95vh] h-[95%]">
-          <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-300 my-4" />
-            <div className="flex-1 overflow-y-hidden">
-              <Drawer.Title className="sr-only">AI Assistant Panel</Drawer.Title>
-              <AIResponsePanel
-                h2hChatId={selectedTicketId}
-                onSelectSuggestion={(s) => {
-                  setMessage(prev => prev ? `${prev} ${s}` : s);
-                  // Programmatically close the drawer - requires a bit more setup, see note below
-                }}
-                // We'll add an explicit close button inside AIResponsePanel for simplicity
-              />
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+        {/* Mobile Bottom Taskbar */}
+        {selectedTicketId && (
+        <div className="h-14 z-30 flex flex-shrink-0 items-center justify-around bg-white/80 backdrop-blur-sm border-t border-gray-200">
+          {/* {selectedTicketId ? ( */}
+            <>
+              <button
+                onClick={handleBackToTickets}
+                className="flex items-center justify-center h-full w-1/2 text-slate-600 font-medium px-4"
+              >
+                <span className="text-xl">&larr;</span>
+                All Conversations
+              </button>
+                <button 
+                  onClick={toggleAiPanel}
+                  className={`flex flex-col items-center justify-center text-xs font-medium w-1/2 h-full transition-colors ${
+                    isAiPanelOpen ? 'text-white bg-purple-600' : 'text-purple-600 bg-white'
+                }`}>
+                  <SparklesIcon className="h-6 w-6" />
+                  AI Assistant
+                </button>
+            </>
+          {/* ) : ( */}
+            <>
+              {/* <button className="flex flex-col items-center justify-center text-xs text-slate-600 font-medium w-1/2 h-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                  Filters
+              </button>
+              <button className="flex flex-col items-center justify-center text-xs text-slate-600 font-medium w-1/2 h-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                  New Ticket
+              </button> */}
+            </>
+          {/* )} */}
+        </div>
+        )}
+      </div>
 
       <ProfileBar />
     </main>
