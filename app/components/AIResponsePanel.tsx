@@ -144,9 +144,9 @@ export default function AIResponsePanel({
   };
 
   return (
-    <aside className="w-full h-full flex flex-col min-h-0 bg-slate-50 border-l border-slate-200 ">
+    <aside className="w-full h-full p-2 flex flex-col min-h-0 bg-slate-50 border-l border-slate-200 ">
       {/* Header */}
-      <div className=" flex-shrink-0 p-3 pb-2">
+      <div className=" flex-shrink-0 pb-2">
         <h3 className="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
           <SparklesIcon className="h-6 w-6"/>AI Assistant
         </h3>
@@ -159,7 +159,7 @@ export default function AIResponsePanel({
       )} */}
     
       {/* --- Response Area (Wrapper for scrolling) --- */}
-      <div className="flex-grow overflow-y-auto pr-1 mb-4">
+      <div className="flex-grow overflow-y-auto pr-1 mb-2">
 
         {messages.length === 0 && !isLoading && <EmptyStatePanel />}
         
@@ -202,7 +202,7 @@ export default function AIResponsePanel({
       
       {/* --- Action Buttons (Footer) --- */}
       <div className="mt-auto">
-        <div className="mb-4 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 to-blue-500 p-0.5 rounded-lg">
+        <div className="mb-2 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 to-blue-500 p-0.5 rounded-lg">
           <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2.5 bg-slate-700 text-white font-semibold rounded-md disabled:opacity-60 transition hover:bg-slate-800 shadow-md">
             {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
           </button>
@@ -210,13 +210,12 @@ export default function AIResponsePanel({
 
         {/* --- Custom Prompt Input --- */}
         <form onSubmit={handleCustomSubmit}>
-          <label htmlFor="ai-prompt" className="block text-sm font-medium text-slate-700 mb-1">Or, write a custom prompt:</label>
           <div className="flex gap-2">
             <textarea 
               id="ai-prompt" 
               rows={3} 
               className="flex-1 p-2 border border-slate-300 rounded-lg" 
-              placeholder="e.g., Politely decline their request..." 
+              placeholder="Write a custom prompt" 
               value={input}
               onChange={(e) => setInput(e.target.value)} 
             />

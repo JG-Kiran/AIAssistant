@@ -208,91 +208,79 @@ export default function CustomerChat({
   };
 
   return (
-    <section className="flex flex-1 flex-row h-full bg-white">
-      <div className="flex-[2] flex flex-col overflow-hidden">
-        <header className="border-b-2 border-slate-100 pb-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-slate-800">
-                {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
-              </h2>
-              {ticketDetails?.contact_name && ticketDetails?.mode && (
-                <p className="text-sm text-slate-500">
-                  {ticketDetails.contact_name} - {ticketDetails.mode}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Status Tag */}
-              {ticketDetails?.status && (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticketDetails.status)}`}>
-                  {ticketDetails.status}
-                </span>
-              )}
-              
-              {/* Agent Photo */}
-              {agentData?.photoURL ? (
-                <img 
-                  src={agentData.photoURL} 
-                  alt={`${agentData.name || 'Agent'}'s profile`}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                  onError={(e) => {
-                    // Fallback to initials if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              
-              {/* Fallback for agent initials when no photo or photo fails */}
-              {agentData && (
-                <div className={`w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
-                  {agentData.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'A'}
-                </div>
-              )}
-            </div>
+    <section className="flex flex-col h-full bg-white p-3 overflow-hidden">
+      <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-slate-800">
+              {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
+            </h2>
+            {ticketDetails?.contact_name && ticketDetails?.mode && (
+              <p className="text-sm text-slate-500">
+                {ticketDetails.contact_name} - {ticketDetails.mode}
+              </p>
+            )}
           </div>
-        </header>
-
-        {selectedTicketId === null ? (
-          <div className="flex flex-col items-center justify-center flex-1 text-center text-slate-500 p-8">
-            <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
-            <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
-          </div>
-        ) : (
-          <PanelGroup direction="vertical" className="flex-1">
-            <Panel defaultSize={75} minSize={40}>
-              <div className="h-full overflow-y-auto bg-slate-50 rounded-lg">
-                <div className="p-4">
-                  <ChatLog messages={messagesForThisTicket} />
-                  <div ref={chatEndRef} />
-                </div>
-              </div>
-            </Panel>
+          
+          <div className="flex items-center gap-3">
+            {/* Status Tag */}
+            {ticketDetails?.status && (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticketDetails.status)}`}>
+                {ticketDetails.status}
+              </span>
+            )}
             
-            <PanelResizeHandle className="h-0.5 bg-gray-200 hover:bg-gray-300 transition-colors my-2" />
-            
-            <Panel defaultSize={25} minSize={15}>
-              <MessageInput 
-                message={message}
-                setMessage={setMessage}
-                onSendMessage={handleSendMessage}
+            {/* Agent Photo */}
+            {agentData?.photoURL ? (
+              <img 
+                src={agentData.photoURL} 
+                alt={`${agentData.name || 'Agent'}'s profile`}
+                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                onError={(e) => {
+                  // Fallback to initials if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
               />
-            </Panel>
-          </PanelGroup>
-        )}
-      </div>
-
-      {selectedTicketId !== null && (
-        <div className="flex-shrink-0">
-          <MessageInput 
-          message={message}
-          setMessage={setMessage}
-          onSendMessage={handleSendMessage}
-          />
+            ) : null}
+            
+            {/* Fallback for agent initials when no photo or photo fails */}
+            {agentData && (
+              <div className={`w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
+                {agentData.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'A'}
+              </div>
+            )}
+          </div>
         </div>
+      </header>
+
+      {selectedTicketId === null ? (
+        <div className="flex flex-col items-center justify-center flex-1 text-center text-slate-500 p-8">
+          <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
+          <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
+        </div>
+      ) : (
+        <PanelGroup direction="vertical" className="flex-1">
+          <Panel defaultSize={75} minSize={40}>
+            <div className="h-full overflow-y-auto bg-slate-50 rounded-lg">
+              <div className="p-4">
+                <ChatLog messages={messagesForThisTicket} />
+                <div ref={chatEndRef} />
+              </div>
+            </div>
+          </Panel>
+          
+          <PanelResizeHandle className="h-0.5 bg-gray-200 hover:bg-gray-300 transition-colors my-2" />
+          
+          <Panel defaultSize={25} minSize={20}>
+            <MessageInput 
+              message={message}
+              setMessage={setMessage}
+              onSendMessage={handleSendMessage}
+            />
+          </Panel>
+        </PanelGroup>
       )}
     </section>
   );
