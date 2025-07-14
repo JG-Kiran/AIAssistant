@@ -23,6 +23,7 @@ export type Ticket = {
   status: string | null;
   description: string | null;
   created_time: string;
+  ticket_owner: string | null;
   isUnread: boolean;
 };
 
@@ -232,6 +233,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         subject, 
         mode, 
         modified_time,
+        ticket_owner,
         chat_read!left(last_read, "user")
       `, { count: 'exact' })
       .order('modified_time', { ascending: false })
@@ -239,12 +241,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
     // Apply view filter (All, My Tickets, Unassigned, Unread)
     if (filters.view === 'my-tickets') {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        query = query.eq('ticket_owner_id', user.id);
+      const currentUserName = await getUserName();
+      if (currentUserName) {
+        query = query.eq('ticket_owner', currentUserName);
       }
     } else if (filters.view === 'unassigned') {
-      query = query.is('ticket_owner_id', null);
+      query = query.is('ticket_owner', null);
     }
 
     // Apply search filter
@@ -280,6 +282,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           status: ticket.status,
           description: ticket.description,
           created_time: ticket.created_time,
+          ticket_owner: ticket.ticket_owner, // Add ticket_owner field
           isUnread: !userReadRecord || 
                     !userReadRecord.last_read || 
                     new Date(ticket.modified_time) > new Date(userReadRecord.last_read)
