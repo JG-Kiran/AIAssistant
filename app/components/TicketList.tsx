@@ -26,12 +26,12 @@ const ChannelIcon = ({ mode }: { mode: string }) => {
   };
 
   return (
-    <div className="flex-shrink-0 w-8 h-8 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm">
+    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm">
       <Image 
         src={getIconPath(mode)} 
         alt={`${mode} channel`}
-        width={20} 
-        height={20}
+        width={24} 
+        height={24}
         className="object-contain"
       />
     </div>
