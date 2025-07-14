@@ -19,6 +19,12 @@ const SparklesIcon = ({ className }: { className: string }) => (
   </svg>
 );
 
+const ProfileIcon = () => ( 
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg> 
+);
+
 export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,7 +32,7 @@ export default function DashboardClient() {
   const selectedTicketId = searchParams.get('ticketId');
   const isAiPanelOpen = searchParams.get('panel') === 'ai';
 
-  const { user, isLoading } = useSessionStore();
+  const { user, isLoading, agentProfile } = useSessionStore();
   const [message, setMessage] = useState('');
 
   // When a ticket is selected, we update the URL
@@ -102,6 +108,8 @@ export default function DashboardClient() {
             />
           </Panel>
         </PanelGroup>
+
+        <ProfileBar />
       </div>
 
       {/* ----- MOBILE LAYOUT ----- */}
@@ -149,14 +157,23 @@ export default function DashboardClient() {
                 <span className="text-xl">&larr;</span>
                 All Conversations
               </button>
-                <button 
-                  onClick={toggleAiPanel}
-                  className={`flex flex-col items-center justify-center text-xs font-medium w-1/2 h-full transition-colors ${
-                    isAiPanelOpen ? 'text-white bg-purple-600' : 'text-purple-600 bg-white'
-                }`}>
-                  <SparklesIcon className="h-6 w-6" />
-                  AI Assistant
-                </button>
+
+              <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
+                {agentProfile?.photoURL ? (
+                  <img src={agentProfile.photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <ProfileIcon />
+                )}
+              </button>
+
+              <button 
+                onClick={toggleAiPanel}
+                className={`flex flex-col items-center justify-center text-xs font-medium w-1/2 h-full transition-colors ${
+                  isAiPanelOpen ? 'text-white bg-purple-600' : 'text-purple-600 bg-white'
+              }`}>
+                <SparklesIcon className="h-6 w-6" />
+                AI Assistant
+              </button>
             </>
           {/* ) : ( */}
             <>
@@ -173,8 +190,6 @@ export default function DashboardClient() {
         </div>
         )}
       </div>
-
-      <ProfileBar />
     </main>
   );
 }

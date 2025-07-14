@@ -7,9 +7,10 @@ export interface AgentProfile {
   id: bigint;
   zuid: bigint | null;
   name: string | null;
-  "firstName": string | null;
-  "lastName": string | null;
-  "emailId": string | null;
+  firstName: string | null;
+  lastName: string | null;
+  emailId: string | null;
+  photoURL: string | null;
 }
 
 interface SessionState {
