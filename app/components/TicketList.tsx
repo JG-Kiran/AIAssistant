@@ -2,12 +2,41 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealtimeStore } from '../stores/useRealtimeStore';
+import Image from 'next/image';
 
 const FilterIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
   </svg>
 );
+
+// Channel icon component
+const ChannelIcon = ({ mode }: { mode: string }) => {
+  const getIconPath = (mode: string): string => {
+    const modeMap: { [key: string]: string } = {
+      'Facebook': '/icons/facebook.svg',
+      'MyStorage': '/icons/whatsapp.svg',
+      'Instagram': '/icons/instagram.svg',
+      'Web': '/icons/web.svg',
+      'Email': '/icons/email.svg',
+      'Phone': '/icons/phone.svg',
+      'ZaloOA': '/icons/zalo.svg',
+    };
+    return modeMap[mode] || '/icons/email.svg'; // Default to email icon if mode not found
+  };
+
+  return (
+    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm">
+      <Image 
+        src={getIconPath(mode)} 
+        alt={`${mode} channel`}
+        width={24} 
+        height={24}
+        className="object-contain"
+      />
+    </div>
+  );
+};
 
 function useDebounce(value : string, delay : number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -26,7 +55,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   // Get state and actions from the Zustand store
-  const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets } = useRealtimeStore();
+  const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
   // Debounce the search text to prevent excessive API calls
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
@@ -52,10 +81,15 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
     if (node) observer.current.observe(node);
   }, [hasMoreTickets, loadMoreTickets]);
 
-  const handleSelectTicket = (id: string) => {
+  const handleSelectTicket = async (id: string) => {
     onSelectTicket(id);
     setSelectedTicket(id);
+    // Mark ticket as read when selected
+    await markTicketAsRead(id);
   }
+
+  // Calculate unread count (removed for now)
+  // const unreadCount = tickets.filter(ticket => ticket.isUnread).length;
 
   const formatMessageTime = (timestamp: string | undefined) => {
     if (!timestamp) return '';
@@ -90,6 +124,12 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
           className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
           My Tickets
+        </button>
+        <button
+          onClick={() => setFilters({ view: 'unread' })}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unread' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Unread
         </button>
         {/* <button
           onClick={() => setFilters({ view: 'unassigned' })}
@@ -159,20 +199,38 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
             <li
               ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${
+                selectedTicket === ticket.ticket_reference_id 
+                  ? 'bg-blue-500 text-white' 
+                  : ticket.isUnread 
+                    ? 'bg-gray-100 border-l-4 border-blue-500 hover:bg-gray-200' 
+                    : 'bg-gray-100 hover:bg-gray-200'
+              }`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-center">
                 <div className="flex-1">
-                  <h3 className={`font-medium ${selectedTicket === ticket.ticket_reference_id ? 'text-white' : 'text-gray-800'}`}>{ticket.contact_name}</h3>
-                  {/* <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p> */}
-                  {ticket.mode && (
-                    <p className={`text-xs px-2 py-1 mt-1 inline-block rounded-full ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {ticket.mode}
-                    </p>
-                  )}
+                  <div className="flex items-center">
+                    <h3 className={`font-medium ${
+                      selectedTicket === ticket.ticket_reference_id 
+                        ? 'text-white' 
+                        : ticket.isUnread 
+                          ? 'text-gray-900 font-semibold' 
+                          : 'text-gray-800'
+                    }`}>
+                      {ticket.subject}
+                    </h3>
+                    {ticket.isUnread && selectedTicket !== ticket.ticket_reference_id && (
+                      <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
+                    )}
+                  </div>
+                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>
+                    {ticket.contact_name}
+                  </p>
                   {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}
                 </div>
+                {/* Channel Icon on the right */}
+                {ticket.mode && <ChannelIcon mode={ticket.mode} />}
               </div>
             </li>
           ))}
