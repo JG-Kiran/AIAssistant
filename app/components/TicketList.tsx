@@ -2,12 +2,41 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealtimeStore } from '../stores/useRealtimeStore';
+import Image from 'next/image';
 
 const FilterIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
   </svg>
 );
+
+// Channel icon component
+const ChannelIcon = ({ mode }: { mode: string }) => {
+  const getIconPath = (mode: string): string => {
+    const modeMap: { [key: string]: string } = {
+      'Facebook': '/icon/facebook.svg',
+      'MyStorage': '/icon/whatsapp.svg',
+      'Instagram': '/icon/instagram.svg',
+      'Web': '/icon/web.svg',
+      'Email': '/icon/email.svg',
+      'Phone': '/icon/phone.svg',
+      'ZaloOA': '/icon/zalo.svg',
+    };
+    return modeMap[mode] || '/icon/web.svg'; // Default to web icon if mode not found
+  };
+
+  return (
+    <div className="flex-shrink-0 w-8 h-8 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm">
+      <Image 
+        src={getIconPath(mode)} 
+        alt={`${mode} channel`}
+        width={20} 
+        height={20}
+        className="object-contain"
+      />
+    </div>
+  );
+};
 
 function useDebounce(value : string, delay : number) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -203,6 +232,8 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                   )}
                   {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}
                 </div>
+                {/* Channel Icon on the right */}
+                {ticket.mode && <ChannelIcon mode={ticket.mode} />}
               </div>
             </li>
           ))}
