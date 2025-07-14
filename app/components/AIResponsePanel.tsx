@@ -207,7 +207,7 @@ export default function AIResponsePanel({
 
         {/* --- Custom Prompt Input --- */}
         <form onSubmit={handleCustomSubmit}>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <textarea 
               id="ai-prompt" 
               rows={3} 
@@ -219,7 +219,7 @@ export default function AIResponsePanel({
             <button
               type="submit" 
               disabled={isLoading || !input.trim() || !h2hChatId} 
-              className="flex items-center justify-center bg-blue-400 text-white rounded-full disabled:opacity-50 transition hover:bg-purple-700 shadow-md"
+              className="h-10 w-10 flex items-center justify-center bg-blue-400 hover:bg-blue-700 text-white rounded-full disabled:opacity-50 transition shadow-md"
               aria-label="Send prompt"
             >
               <img src="/icons/sendmessage.svg" className="h-6 w-6" />
