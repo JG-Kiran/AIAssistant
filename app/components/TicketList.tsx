@@ -14,15 +14,15 @@ const FilterIcon = ({ className }: { className: string }) => (
 const ChannelIcon = ({ mode }: { mode: string }) => {
   const getIconPath = (mode: string): string => {
     const modeMap: { [key: string]: string } = {
-      'Facebook': '/icon/facebook.svg',
-      'MyStorage': '/icon/whatsapp.svg',
-      'Instagram': '/icon/instagram.svg',
-      'Web': '/icon/web.svg',
-      'Email': '/icon/email.svg',
-      'Phone': '/icon/phone.svg',
-      'ZaloOA': '/icon/zalo.svg',
+      'Facebook': '/icons/facebook.svg',
+      'MyStorage': '/icons/whatsapp.svg',
+      'Instagram': '/icons/instagram.svg',
+      'Web': '/icons/web.svg',
+      'Email': '/icons/email.svg',
+      'Phone': '/icons/phone.svg',
+      'ZaloOA': '/icons/zalo.svg',
     };
-    return modeMap[mode] || '/icon/web.svg'; // Default to web icon if mode not found
+    return modeMap[mode] || '/icons/email.svg'; // Default to email icon if mode not found
   };
 
   return (
