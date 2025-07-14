@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { supabase } from '../lib/supabase'
 import { useRealtimeStore } from '../stores/useRealtimeStore';
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import ChatLog from './ChatLog';
 import MessageInput from './MessageInput';
 
@@ -163,7 +163,7 @@ export default function CustomerChat({
         </header>
 
         {selectedTicketId === null ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
+          <div className="flex flex-col items-center justify-center flex-1 text-center text-slate-500 p-8">
             <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
             <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
           </div>
@@ -180,7 +180,7 @@ export default function CustomerChat({
             
             <PanelResizeHandle className="h-0.5 bg-gray-200 hover:bg-gray-300 transition-colors my-2" />
             
-            <Panel defaultSize={25} minSize={15} maxSize={60}>
+            <Panel defaultSize={25} minSize={15}>
               <MessageInput 
                 message={message}
                 setMessage={setMessage}
@@ -191,5 +191,5 @@ export default function CustomerChat({
         )}
       </div>
     </section>
-  );
+);
 } 
