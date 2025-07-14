@@ -8,6 +8,16 @@ import { google } from '@ai-sdk/google';
 import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is correct
 // We no longer import standardTrainingPrompt
 
+// Import all the product content
+import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
+import { digitalTeaserContent } from '@/lib/markdowns/digital_teaser';
+import { sizeVisualisationContent } from '@/lib/markdowns/size_visualisation';
+import { whyWeAreTheBestContent } from '@/lib/markdowns/why_we_are_the_best';
+import { objectionHandlingContent } from '@/lib/markdowns/objection_handling';
+import { priceListContent } from '@/lib/markdowns/price_list';
+import { brochureContent } from '@/lib/markdowns/brochure';
+import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';
+
 const triageSystemPrompt = `
 You are a context analysis expert. Your sole job is to identify the most relevant information for a customer service agent.
 The user will provide you with three pieces of information:
@@ -44,6 +54,34 @@ export async function POST(req: Request) {
     --- SERVICE TIPS START ---
     ${customerServiceGuidelines}
     --- SERVICE TIPS END ---
+
+    --- PRODUCT INFORMATION START ---
+    
+    === COMPANY COMPARISONS (ENGLISH) ===
+    ${comparisonsEnContent}
+    
+    === COMPANY COMPARISONS (VIETNAMESE) ===
+    ${comparisonsVnContent}
+    
+    === WINE STORAGE DIGITAL TEASER ===
+    ${digitalTeaserContent}
+    
+    === SALES CHECKLIST & SIZE VISUALIZATION ===
+    ${sizeVisualisationContent}
+    
+    === WHY WE ARE THE BEST ===
+    ${whyWeAreTheBestContent}
+    
+    === OBJECTION HANDLING GUIDE ===
+    ${objectionHandlingContent}
+    
+    === COMPLETE PRICE LIST ===
+    ${priceListContent}
+    
+    === COMPANY BROCHURE ===
+    ${brochureContent}
+    
+    --- PRODUCT INFORMATION END ---
     `;
 
     // 3. Create the user message for the Triage Agent.
