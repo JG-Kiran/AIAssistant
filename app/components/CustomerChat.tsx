@@ -212,11 +212,11 @@ export default function CustomerChat({
       <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-800">
+            <h2 className="text-2xl font-bold text-accent">
               {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
             </h2>
             {ticketDetails?.contact_name && ticketDetails?.mode && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-text">
                 {ticketDetails.contact_name} - {ticketDetails.mode}
               </p>
             )}
@@ -247,7 +247,7 @@ export default function CustomerChat({
             
             {/* Fallback for agent initials when no photo or photo fails */}
             {agentData && (
-              <div className={`w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
+              <div className={`w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
                 {agentData.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'A'}
               </div>
             )}
@@ -257,13 +257,13 @@ export default function CustomerChat({
 
       {selectedTicketId === null ? (
         <div className="flex flex-col items-center justify-center flex-1 text-center text-slate-500 p-8">
-          <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
+          <h2 className="text-2xl font-bold text-accent">Select a ticket</h2>
           <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
         </div>
       ) : (
         <PanelGroup direction="vertical" className="flex-1">
           <Panel defaultSize={75} minSize={40}>
-            <div className="h-full overflow-y-auto bg-slate-50 rounded-lg">
+            <div className="h-full overflow-y-auto bg-background-gray rounded-lg">
               <div className="p-4">
                 <ChatLog messages={messagesForThisTicket} />
                 <div ref={chatEndRef} />

@@ -105,29 +105,29 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   return (
-    <section className="bg-white pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
+    <section className="bg-background-gray pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="pr-4">
-        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-slate-800">Conversations</h2>
+        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-text">Conversations</h2>
       </div>
 
       {/* --- Filter buttons --- */}
       <div className="flex items-center space-x-2 my-3 pr-2">
         <button
           onClick={() => setFilters({ view: 'all' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'all' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
         >
           All Tickets
         </button>
         <button
           onClick={() => setFilters({ view: 'my-tickets' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
         >
           My Tickets
         </button>
         <button
           onClick={() => setFilters({ view: 'unread' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unread' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unread' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
         >
           Unread
         </button>
@@ -145,13 +145,13 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
           <input
             type="text"
             placeholder={filters.searchType === 'name' ? "Search by name..." : "Search by reference..."}
-            className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary"
             value={filters.searchText}
             onChange={(e) => setFilters({ searchText: e.target.value })}
           />
           <button 
             onClick={() => setIsFilterVisible(!isFilterVisible)}
-            className={`p-2 border rounded-md transition-colors ${isFilterVisible ? 'bg-blue-100 border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500 hover:bg-gray-100'}`}
+            className={`p-2 border rounded-md transition-colors ${isFilterVisible ? 'bg-sky-blue border-primary text-primary' : 'border-gray-300 text-gray-500 hover:bg-gray-100'}`}
             aria-label="Toggle filters"
           >
             <FilterIcon className="h-5 w-5" />
@@ -162,7 +162,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFilterVisible ? 'max-h-40 mt-2' : 'max-h-0'}`}> 
           <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
             <div>
-              <label className="text-sm font-medium text-gray-700">Search By</label>
+              <label className="text-sm font-medium text-text">Search By</label>
               <select
                 value={filters.searchType}
                 onChange={(e) => setFilters({ searchType: e.target.value as 'name' | 'reference' })}
@@ -173,7 +173,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Channel</label>
+              <label className="text-sm font-medium text-text">Channel</label>
               <select
                 value={filters.modeFilter}
                 onChange={(e) => setFilters({ modeFilter: e.target.value })}
@@ -201,10 +201,10 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               key={ticket.ticket_reference_id}
               className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${
                 selectedTicket === ticket.ticket_reference_id 
-                  ? 'bg-blue-500 text-white' 
+                  ? 'bg-primary text-white' 
                   : ticket.isUnread 
-                    ? 'bg-gray-100 border-l-4 border-blue-500 hover:bg-gray-200' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-sky-blue border-l-4 border-primary hover:bg-blue-200' 
+                    : 'bg-white hover:bg-gray-100'
               }`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
@@ -215,16 +215,16 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                       selectedTicket === ticket.ticket_reference_id 
                         ? 'text-white' 
                         : ticket.isUnread 
-                          ? 'text-gray-900 font-semibold' 
-                          : 'text-gray-800'
+                          ? 'text-accent font-semibold' 
+                          : 'text-text'
                     }`}>
                       {ticket.subject}
                     </h3>
                     {ticket.isUnread && selectedTicket !== ticket.ticket_reference_id && (
-                      <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
+                      <span className="ml-2 w-2 h-2 bg-primary rounded-full"></span>
                     )}
                   </div>
-                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>
+                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-sky-blue' : 'text-gray-500'}`}>
                     {ticket.contact_name}
                   </p>
                   {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}

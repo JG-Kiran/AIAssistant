@@ -89,11 +89,11 @@ export default function DashboardClient() {
       {/* ----- DESKTOP LAYOUT ----- */}
       <div className="hidden md:flex h-full w-full">
         <PanelGroup direction="horizontal">
-          <Panel defaultSize={25} minSize={20}>
+          <Panel defaultSize={32} minSize={20}>
             <TicketList onSelectTicket={handleSelectTicket} />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
-          <Panel defaultSize={50} minSize={30}>
+          <Panel defaultSize={33} minSize={30}>
             <CustomerChat
               selectedTicketId={selectedTicketId}
               message={message}
@@ -101,7 +101,7 @@ export default function DashboardClient() {
             />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
-          <Panel defaultSize={30} minSize={25}>
+          <Panel defaultSize={35} minSize={25}>
             <AIResponsePanel
               h2hChatId={selectedTicketId}
               onSelectSuggestion={(s) => setMessage(s)}
@@ -159,11 +159,11 @@ export default function DashboardClient() {
               </button>
 
               <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
-                {agentProfile?.photoURL ? (
+                {/* {agentProfile?.photoURL ? (
                   <img src={agentProfile.photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                ) : (
+                ) : ( */}
                   <ProfileIcon />
-                )}
+                {/* )} */}
               </button>
 
               <button 
