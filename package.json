@@ -27,6 +27,7 @@
     "lint": "next lint"
   },
   "devDependencies": {
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@types/html-to-text": "^9.0.4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "22.15.30",

@@ -212,7 +212,7 @@ export default function CustomerChat({
       <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-accent">
+            <h2 className="text-2xl font-bold text-accent line-clamp-2">
               {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
             </h2>
             {ticketDetails?.contact_name && ticketDetails?.mode && (

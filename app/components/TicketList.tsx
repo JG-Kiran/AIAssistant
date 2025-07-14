@@ -54,9 +54,7 @@ function useDebounce(value : string, delay : number) {
 export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: string) => void }) {
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  // Get state and actions from the Zustand store
   const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
-  // Debounce the search text to prevent excessive API calls
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
   // This single, unified useEffect handles both the initial data load AND all filter changes.
@@ -131,12 +129,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         >
           Unread
         </button>
-        {/* <button
-          onClick={() => setFilters({ view: 'unassigned' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unassigned' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-        >
-          Unassigned
-        </button> */}
       </div>
 
       {/* Search and Filter Section */}
@@ -209,9 +201,9 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-center">
-                <div className="flex-1">
-                  <div className="flex items-center">
-                    <h3 className={`font-medium ${
+                <div className="flex-1 mr-1">
+                  {/* <div className="flex items-center"> */}
+                    <h3 className={`font-medium line-clamp-2 ${
                       selectedTicket === ticket.ticket_reference_id 
                         ? 'text-white' 
                         : ticket.isUnread 
@@ -220,10 +212,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                     }`}>
                       {ticket.subject}
                     </h3>
-                    {ticket.isUnread && selectedTicket !== ticket.ticket_reference_id && (
-                      <span className="ml-2 w-2 h-2 bg-primary rounded-full"></span>
-                    )}
-                  </div>
                   <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-sky-blue' : 'text-gray-500'}`}>
                     {ticket.contact_name}
                   </p>
