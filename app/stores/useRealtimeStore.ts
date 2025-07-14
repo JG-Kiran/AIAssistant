@@ -17,6 +17,7 @@ export type Thread = {
 export type Ticket = {
   ticket_reference_id: string;
   contact_name: string;
+  subject: string;
   mode: string;
   modified_time: string;
   status: string | null;
@@ -228,6 +229,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       .select(`
         ticket_reference_id, 
         contact_name, 
+        subject, 
         mode, 
         modified_time,
         chat_read!left(last_read, "user")
@@ -272,6 +274,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         return {
           ticket_reference_id: ticket.ticket_reference_id,
           contact_name: ticket.contact_name,
+          subject: ticket.subject,
           mode: ticket.mode,
           modified_time: ticket.modified_time,
           status: ticket.status,

@@ -218,18 +218,15 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
                           ? 'text-gray-900 font-semibold' 
                           : 'text-gray-800'
                     }`}>
-                      {ticket.contact_name}
+                      {ticket.subject}
                     </h3>
                     {ticket.isUnread && selectedTicket !== ticket.ticket_reference_id && (
                       <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full"></span>
                     )}
                   </div>
-                  {/* <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>{ticket.ticket_reference_id}</p> */}
-                  {ticket.mode && (
-                    <p className={`text-xs px-2 py-1 mt-1 inline-block rounded-full ${selectedTicket === ticket.ticket_reference_id ? 'bg-blue-400 text-white' : 'bg-gray-200 text-gray-600'}`}>
-                      {ticket.mode}
-                    </p>
-                  )}
+                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-200' : 'text-gray-500'}`}>
+                    {ticket.contact_name}
+                  </p>
                   {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}
                 </div>
                 {/* Channel Icon on the right */}

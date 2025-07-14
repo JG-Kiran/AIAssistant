@@ -17,11 +17,21 @@ export interface ChatMessage {
 
 export interface TicketDetails {
   contact_name: string;
+  subject?: string;
   ticket_reference_id?: string;
   mode?: string;
   email?: string;
   description?: string;
   created_time?: string;
+  status?: string;
+  ticket_owner_id?: string;
+}
+
+interface AgentData {
+  id: string;
+  name: string;
+  photoURL: string;
+  emailId: string;
 }
 
 export default function CustomerChat({ 
@@ -34,6 +44,7 @@ export default function CustomerChat({
   setMessage: (value: string) => void,
 }) {
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
+  const [agentData, setAgentData] = useState<AgentData | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
 
@@ -58,6 +69,21 @@ export default function CustomerChat({
       if (ticketRes.data && threadsRes.data) {
         setTicketDetails(ticketRes.data);
         setInitialThreadsForTicket(selectedTicketId, threadsRes.data, ticketRes.data);
+        
+        // Fetch agent data if ticket has an owner
+        if (ticketRes.data.ticket_owner_id) {
+          const { data: agentRes, error: agentError } = await supabase
+            .from('agents')
+            .select('id, name, photoURL, emailId')
+            .eq('id', ticketRes.data.ticket_owner_id)
+            .single();
+          
+          if (agentRes && !agentError) {
+            setAgentData(agentRes);
+          }
+        } else {
+          setAgentData(null);
+        }
       }
     };
     fetchAndSetData();
@@ -72,6 +98,7 @@ export default function CustomerChat({
   useEffect(() => {
     if (!selectedTicketId) {
       setTicketDetails(null);
+      setAgentData(null);
       return;
     }
     const fetchTicketDetails = async () => { 
@@ -86,6 +113,21 @@ export default function CustomerChat({
         return;
       }
       setTicketDetails(data);
+      
+      // Fetch agent data if ticket has an owner
+      if (data.ticket_owner_id) {
+        const { data: agentRes, error: agentError } = await supabase
+          .from('agents')
+          .select('id, name, photoURL, emailId')
+          .eq('id', data.ticket_owner_id)
+          .single();
+        
+        if (agentRes && !agentError) {
+          setAgentData(agentRes);
+        }
+      } else {
+        setAgentData(null);
+      }
     };
     fetchTicketDetails();
   }, [selectedTicketId]);
@@ -152,14 +194,66 @@ export default function CustomerChat({
     }
   };
 
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) return 'bg-gray-100 text-gray-700';
+    
+    switch (status.toLowerCase()) {
+      case 'closed':
+        return 'bg-green-100 text-green-800';
+      case 'on hold':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
     <section className="flex flex-1 flex-row h-full bg-white">
       <div className="flex-[2] flex flex-col p-4 overflow-hidden">
         <header className="border-b-2 border-slate-100 pb-4 mb-4">
-          <h2 className="text-2xl font-bold text-slate-800">
-            {ticketDetails?.contact_name || 'Customer'}
-          </h2>
-          {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-slate-800">
+                {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
+              </h2>
+              {ticketDetails?.contact_name && ticketDetails?.mode && (
+                <p className="text-sm text-slate-500">
+                  {ticketDetails.contact_name} - {ticketDetails.mode}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Status Tag */}
+              {ticketDetails?.status && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticketDetails.status)}`}>
+                  {ticketDetails.status}
+                </span>
+              )}
+              
+              {/* Agent Photo */}
+              {agentData?.photoURL ? (
+                <img 
+                  src={agentData.photoURL} 
+                  alt={`${agentData.name || 'Agent'}'s profile`}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              
+              {/* Fallback for agent initials when no photo or photo fails */}
+              {agentData && (
+                <div className={`w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
+                  {agentData.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'A'}
+                </div>
+              )}
+            </div>
+          </div>
         </header>
 
         {selectedTicketId === null ? (
@@ -191,5 +285,5 @@ export default function CustomerChat({
         )}
       </div>
     </section>
-);
+  );
 } 
