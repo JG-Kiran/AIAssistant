@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
 import { useRealtimeStore } from '../stores/useRealtimeStore';
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import ChatLog from './ChatLog';
 import MessageInput from './MessageInput';
 
@@ -161,28 +162,34 @@ export default function CustomerChat({
           {ticketDetails?.mode && <p className="text-sm text-slate-500">{ticketDetails.mode}</p>}
         </header>
 
-        <div className="flex-1 overflow-y-auto mb-4 bg-slate-50 rounded-lg">
-          {selectedTicketId === null ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
-              <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
-              <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
-            </div>
-          ) : (
-            <div className="p-4">
-              <ChatLog messages={messagesForThisTicket} />
-              <div ref={chatEndRef} />
-            </div>
-          )}
-        </div>
-
-        {selectedTicketId !== null && (
-          <MessageInput 
-            message={message}
-            setMessage={setMessage}
-            onSendMessage={handleSendMessage}
-        />
+        {selectedTicketId === null ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8">
+            <h2 className="text-2xl font-bold text-slate-700">Select a ticket</h2>
+            <p className="mt-2 max-w-md">Select a conversation from the list on the left to get started.</p>
+          </div>
+        ) : (
+          <PanelGroup direction="vertical" className="flex-1">
+            <Panel defaultSize={75} minSize={40}>
+              <div className="h-full overflow-y-auto bg-slate-50 rounded-lg">
+                <div className="p-4">
+                  <ChatLog messages={messagesForThisTicket} />
+                  <div ref={chatEndRef} />
+                </div>
+              </div>
+            </Panel>
+            
+            <PanelResizeHandle className="h-0.5 bg-gray-200 hover:bg-gray-300 transition-colors my-2" />
+            
+            <Panel defaultSize={25} minSize={15} maxSize={60}>
+              <MessageInput 
+                message={message}
+                setMessage={setMessage}
+                onSendMessage={handleSendMessage}
+              />
+            </Panel>
+          </PanelGroup>
         )}
       </div>
     </section>
-);
+  );
 } 
