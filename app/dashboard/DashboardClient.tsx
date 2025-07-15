@@ -7,6 +7,7 @@ import { useSessionStore } from "../stores/useSessionStore";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { motion, AnimatePresence } from 'framer-motion';
 
+import TopNavBar from "../components/TopNavBar"
 import ProfileBar from "../components/ProfileBar";
 import TicketList from "../components/TicketList";
 import CustomerChat from "../components/CustomerChat";
@@ -34,6 +35,8 @@ export default function DashboardClient() {
 
   const { user, isLoading, agentProfile } = useSessionStore();
   const [message, setMessage] = useState('');
+  const [isProfileBarOpen, setIsProfileBarOpen] = useState(false); // State to manage the sidebar
+
 
   // When a ticket is selected, we update the URL
   const handleSelectTicket = (ticketId: string) => {
@@ -85,9 +88,11 @@ export default function DashboardClient() {
   }, [router]);
 
   return (
-    <main className="flex h-screen w-screen overflow-hidden bg-gray-50">
+    <main className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
       {/* ----- DESKTOP LAYOUT ----- */}
-      <div className="hidden md:flex h-full w-full">
+      <TopNavBar onProfileClick={() => setIsProfileBarOpen((open) => !open)} />
+
+      <div className="hidden md:flex overflow-y-auto overflow-x-hidden h-full w-full flex-1 relative">
         <PanelGroup direction="horizontal">
           <Panel defaultSize={32} minSize={20}>
             <TicketList onSelectTicket={handleSelectTicket} />
@@ -109,7 +114,7 @@ export default function DashboardClient() {
           </Panel>
         </PanelGroup>
 
-        <ProfileBar />
+        <ProfileBar isOpen={isProfileBarOpen} setIsOpen={setIsProfileBarOpen} />
       </div>
 
       {/* ----- MOBILE LAYOUT ----- */}

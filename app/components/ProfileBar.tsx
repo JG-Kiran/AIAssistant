@@ -1,15 +1,27 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSessionStore } from '../stores/useSessionStore';
 import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react';
 
-export default function ProfileBar() {
+// Define the props the component will now accept
+interface ProfileBarProps {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
   const router = useRouter();
-  const { agentProfile, user, clearSession } = useSessionStore();
+  const agentProfile = useSessionStore((state) => state.agentProfile);
+  const userEmail = useSessionStore((state) => state.user?.email);
+  const clearSession = useSessionStore((state) => state.clearSession);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [agentProfile?.photoURL]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -19,35 +31,31 @@ export default function ProfileBar() {
 
   return (
     <>
-      {/* Profile icon (top-right button) */}
-      <div className="absolute top-3 right-3 z-50">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-center h-11 w-11 bg-white rounded-full shadow-md hover:bg-slate-100 transition-transform hover:scale-105 active:scale-95"
-          aria-label="Open profile menu"
-        >
-           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
-           </svg>
-        </button>
-      </div>
-
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-72 bg-white shadow-xl z-40 transition-transform duration-300 ease-in-out ${
+        className={`absolute top-0 right-0 h-full w-72 bg-white shadow-xl z-40 transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-lg font-bold text-accent">Agent Profile</h2>
-          <button onClick={() => setIsOpen(false)} className="text-2xl text-slate-500 hover:text-accent transition-colors">&times;</button>
+          <h2 className="text-lg font-bold text-slate-800">Agent Profile</h2>
+          <button onClick={() => setIsOpen(false)} className="text-2xl text-slate-500 hover:text-slate-800 transition-colors">&times;</button>
         </div>
         <div className="p-4">
           <div className="text-center py-4 mb-4 border-b border-slate-200">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto flex items-center justify-center text-5xl font-bold text-white mb-3 ring-4 ring-white shadow-lg">
-              {agentProfile?.name?.charAt(0).toUpperCase() || 'A'}
-            </div>
-            <p className="font-semibold text-accent text-lg">{agentProfile?.name || user?.email || 'agent@email.com'}</p>
+            {agentProfile?.photoURL && !imageError ? (
+              <img
+                src={agentProfile.photoURL}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover mx-auto mb-3 ring-4 ring-white shadow-lg"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto flex items-center justify-center text-5xl font-bold text-white mb-3 ring-4 ring-white shadow-lg">
+                {agentProfile?.name?.charAt(0).toUpperCase() || 'A'}
+              </div>
+            )}
+            <p className="font-semibold text-accent text-lg">{agentProfile?.name || userEmail || 'agent@email.com'}</p>
             <p className="text-sm text-slate-500">Support Agent</p>
           </div>
           <div className="space-y-2">
@@ -82,7 +90,7 @@ export default function ProfileBar() {
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30 transition-opacity duration-300"
+          className="absolute h-full w-full inset-0 bg-black bg-opacity-40 z-30 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
