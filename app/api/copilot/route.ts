@@ -71,7 +71,10 @@ export async function POST(req: Request) {
     Here is the current conversation:
     ${h2hConversation}
 
-    Please identify the most relevant rules and tips for the agent's next reply.
+    And here is the specific instruction or question from the agent (if any):
+    "${customPrompt || 'No specific instruction. Base your analysis on the conversation history.'}"
+
+    Based on BOTH the conversation history AND the agent's specific instruction, please identify the most relevant rules and tips for the agent's next reply.
     `;
 
     // 4. Make the FIRST, NON-STREAMING call to the fast model.
@@ -84,41 +87,32 @@ export async function POST(req: Request) {
 
     // === STAGE 2: EXPERT CALL (Generate User-Facing Reply) ===
 
-    // 5. Create the final instruction for the Expert Agent (same as now).
-    const finalInstruction = customPrompt
-    ? `Based on the conversation history and the agent's instruction below, please draft a single, polished, and professional reply to the customer.
-AGENT'S INSTRUCTION: "${customPrompt}"
-Do not add any intro, explanation, or labels. Only return the final, ready-to-send message.`
-    : `Based on the conversation and the provided context, please suggest 1 professional reply that the agent can send next.
-Do not include explanations, intros, markdown formatting, or labels.`;
+    // 5. Construct the system prompt for the Expert Agent.
+    // This prompt combines the dynamically-selected context with the conversation history.
+    const expertSystemPrompt = `You are an expert customer service assistant for a sales agent.
+Your primary goal is to help the agent write a professional reply to a customer.
 
-    // 6. Construct the NEW, much smaller system prompt for the Expert Agent.
-    const expertSystemPrompt = `
-    You are an expert customer service assistant.
-    You must follow these highly relevant rules and tips for this specific situation:
-    --- RELEVANT CONTEXT START ---
-    ${relevantContext}
-    --- RELEVANT CONTEXT END ---
+You must use the following context, which was selected as highly relevant for this specific interaction:
+--- RELEVANT CONTEXT START ---
+${relevantContext}
+--- RELEVANT CONTEXT END ---
 
-    Now, review the Human-to-Human (H2H) conversation history:
-    --- H2H CONVERSATION START ---
-    ${h2hConversation}
-    --- H2H CONVERSATION END ---
+Here is the full Human-to-Human (H2H) conversation history between the agent and the customer so far:
+--- H2H CONVERSATION START ---
+${h2hConversation}
+--- H2H CONVERSATION END ---
 
-    Your final task is to act on the user's latest request.
-    --- AGENT'S TASK ---
-    ${finalInstruction}
-    --- END OF TASK ---
-    `;
+Based on all the information above, fulfill the agent's request from the chat.
+IMPORTANT: Do not add any extra explanations, introductions, markdown formatting, or labels. Your response should ONLY be the raw text for the agent to send to the customer.`;
     
-    // 7. Make the SECOND, STREAMING call to the AI.
+    // 6. Make the SECOND, STREAMING call to the AI.
     const result = await streamText({
       model: google('models/gemini-2.5-flash'),
       system: expertSystemPrompt,
       messages: messages, // This is the H2A message history from the `useChat` hook
     });
 
-    // 8. Respond with the stream
+    // 7. Respond with the stream
     return result.toDataStreamResponse();
     
 
