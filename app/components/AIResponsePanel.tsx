@@ -95,6 +95,7 @@ export default function AIResponsePanel({
           role: msg.role,
           content: msg.content,
           createdAt: new Date(msg.created_at),
+          name: msg.sent_by,
         }));
         setMessages(history);
       }
@@ -163,7 +164,7 @@ export default function AIResponsePanel({
         {messages.length === 0 && !isLoading && <EmptyStatePanel />}
         
         <div className="flex flex-col gap-3">
-        {messages.map(m => (
+        {(messages as (Message & { name?: string })[]).map(m => (
           <div key={m.id}>
             {/* Message bubble */}
             <div className={`p-3.5 rounded-lg shadow-sm text-sm ${ 
@@ -172,7 +173,7 @@ export default function AIResponsePanel({
                 : 'bg-gradient-to-br from-sky-blue via-blue-50 to-cyan-50 border border-primary text-text' // AI Assistant
             }`}>
               <div className="font-bold text-accent mb-1.5">
-                {m.role === 'user' ? agentName : 'AI Suggestion'}
+                {m.role === 'user' ? (m.name || agentName) : 'AI Suggestion'}
               </div>
               {m.content}
 
