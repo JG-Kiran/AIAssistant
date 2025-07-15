@@ -9,7 +9,6 @@ const PROMPT_SECTIONS = [
     { tag: 'persona', label: 'Persona', placeholder: 'Define the AI\'s role and identity...' },
     { tag: 'objective', label: 'Objective', placeholder: 'What is the primary goal of the AI?' },
     { tag: 'tone_of_voice', label: 'Tone of Voice', placeholder: 'Describe the communication style...' },
-    { tag: 'knowledge_source', label: 'Knowledge Source', placeholder: 'Information about knowledge sources...' },
     { tag: 'brand_advantages', label: 'Brand Advantages', placeholder: 'Key advantages to emphasize...' },
     { tag: 'core_tasks', label: 'Core Tasks', placeholder: 'Primary tasks the AI should support...' },
     { tag: 'product_guidelines', label: 'Product Guidelines', placeholder: 'Guidelines for product recommendations...' },

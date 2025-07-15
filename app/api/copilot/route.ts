@@ -9,13 +9,13 @@ import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is 
 // We no longer import standardTrainingPrompt
 
 // Import all the product content
-/*import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
+import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
 import { digitalTeaserContent } from '@/lib/markdowns/digital_teaser';
 import { sizeVisualisationContent } from '@/lib/markdowns/size_visualisation';
 import { whyWeAreTheBestContent } from '@/lib/markdowns/why_we_are_the_best';
 import { objectionHandlingContent } from '@/lib/markdowns/objection_handling';
 import { brochureContent } from '@/lib/markdowns/brochure';
-import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';*/
+import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';
 import { priceListContent } from '@/lib/markdowns/price_list';
 
 export const maxDuration = 30; // Optional: Allow longer serverless function execution
@@ -35,27 +35,72 @@ export async function POST(req: Request) {
 
     // 5. Construct the system prompt for the Expert Agent.
     // This prompt combines the dynamically-selected context with the conversation history.
-    const fullSystemPrompt = `You are an expert customer service assistant for a sales agent.
+    const fullSystemPrompt = `You are an expert sales assistant for a sales agent.
 Your primary goal is to help the agent write a professional reply to a customer.
-    *** THIS IS THE RULES AND PERSONA YOU MUST FOLLOW ***
+
+This is the rules you must follow and persona you are to take on:
+    *** RULES START ***
     ${customSystemPrompt}
     *** RULES END ***
 
-    *** THIS IS THE PRICE LIST FOR OUR PRODUCT TO REFER TO ASKED ABOUT PRICES ***
+Here is the full conversation history between the agent and the customer so far, analyse and know the customer's
+latest requests in the conversation:
+    *** CONVERSATION START ***
+    ${h2hConversation}
+    *** CONVERSATION END ***
+Knowing the agent to customer conversation, YOUR TASK is to address the sales agent's request in the chat:
+    *** AGENT REQUEST START ***
+    ${customPrompt}
+    *** AGENT REQUEST END ***
+
+If the request asks to know more about MyStorage:
+    ***INTRODUCE US WITH THIS FLOW***
+    ${sizeVisualisationContent}
+    ---------------------------
+    If the query is more specific, refer to the specific steps if can be found
+     e.g. "How do the sizes and quotations work"; --> refer to ## 4. QUOTATION & PRICING
+    ***INTRODUCTION END***
+    
+If the request is about pricing query: 
+    This is the price list to refer to
+    *** PRICE LIST START ***
     ${priceListContent}
     *** PRICE LIST END ***
 
-    *** THIS ARE FURTHER TIPS YOU CAN FOLLOW ***
+If the request is about MyStorage's specific advantages:
+    These are our brand advantages on our own (without comparisons)
+    *** ADVANTAGES START***
+    ${whyWeAreTheBestContent}
+    *** ADVANTAGES END ***
+
+    If request specifically ask to compare with other storage companies: 
+    *** THIS IS THE COMPARISONS ***   
+    Use this if request is in Vietnamese
+    ${comparisonsVnContent}
+    Or else this if the request is in English or other languages
+    ${comparisonsEnContent}
+    *** COMPARISONS END ***
+
+If the request is to address customer's dissatisfaction/doubt/objection etc about our policies:
+    This is a list of common objections you can respond to based on the kind of objection
+    ***OBJECTION RESPONSES START***
+    ${objectionHandlingContent}
+    ***OBJECTION RESPONSES END***
+
+If the request is query about our wine storage:
+    This is the info to refer to
+    ***WINE STORAGE INFO START***
+    ${brochureContent}
+    ${digitalTeaserContent}
+    ***WINE STORAGE INFO END***
+
+Else, for other requests unrelated to anything listed above, just craft a professional reply following the 
+
+Here are some further tips you can follow when crafting a response to customer:
+    *** SERVICE TIPS START ***
     ${customerServiceGuidelines}
     *** SERVICE TIPS END ***
 
-Here is the full conversation history between the agent and the customer so far, analyse and know the customer's
-latest requests in the conversation:
-*** CONVERSATION START ***
-${h2hConversation}
-*** CONVERSATION END ***
-
-Based on all the information above, fulfill the sales agent's latest request from the chat: ${customPrompt}.
 IMPORTANT: Do not add any extra explanations, introductions, markdown formatting, or labels. Your response should ONLY be the raw text for the agent to send to the customer.`;
     
     // 6. Make the SECOND, STREAMING call to the AI.
