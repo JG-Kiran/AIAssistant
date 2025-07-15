@@ -6,12 +6,10 @@ import { useSessionStore } from '../stores/useSessionStore';
 import { supabase } from '../lib/supabase';
 
 export default function ProfileBar() {
-  const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const { agentProfile, user, clearSession } = useSessionStore();
 
-  const agentProfile = useSessionStore((state) => state.agentProfile);
-  const userEmail = useSessionStore((state) => state.user?.email);
-  const clearSession = useSessionStore((state) => state.clearSession);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -22,7 +20,7 @@ export default function ProfileBar() {
   return (
     <>
       {/* Profile icon (top-right button) */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-3 right-3 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center justify-center h-11 w-11 bg-white rounded-full shadow-md hover:bg-slate-100 transition-transform hover:scale-105 active:scale-95"
@@ -49,7 +47,7 @@ export default function ProfileBar() {
             <div className="w-24 h-24 bg-gradient-to-br from-primary to-secondary rounded-full mx-auto flex items-center justify-center text-5xl font-bold text-white mb-3 ring-4 ring-white shadow-lg">
               {agentProfile?.name?.charAt(0).toUpperCase() || 'A'}
             </div>
-            <p className="font-semibold text-accent text-lg">{agentProfile?.name || userEmail || 'agent@email.com'}</p>
+            <p className="font-semibold text-accent text-lg">{agentProfile?.name || user?.email || 'agent@email.com'}</p>
             <p className="text-sm text-slate-500">Support Agent</p>
           </div>
           <div className="space-y-2">

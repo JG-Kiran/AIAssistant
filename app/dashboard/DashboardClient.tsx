@@ -159,11 +159,21 @@ export default function DashboardClient() {
               </button>
 
               <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
-                {/* {agentProfile?.photoURL ? (
-                  <img src={agentProfile.photoURL} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                ) : ( */}
+                {agentProfile?.photoURL ? (
+                  <img 
+                    src={agentProfile.photoURL} 
+                    alt={`${agentProfile.name || 'Agent'}'s profile`}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                    onError={(e) => {
+                      // Fallback to initials if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : (
                   <ProfileIcon />
-                {/* )} */}
+                )}
               </button>
 
               <button 
