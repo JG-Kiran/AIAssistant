@@ -9,23 +9,24 @@ import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is 
 // We no longer import standardTrainingPrompt
 
 // Import all the product content
-import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
+/*import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
 import { digitalTeaserContent } from '@/lib/markdowns/digital_teaser';
 import { sizeVisualisationContent } from '@/lib/markdowns/size_visualisation';
 import { whyWeAreTheBestContent } from '@/lib/markdowns/why_we_are_the_best';
 import { objectionHandlingContent } from '@/lib/markdowns/objection_handling';
-import { priceListContent } from '@/lib/markdowns/price_list';
 import { brochureContent } from '@/lib/markdowns/brochure';
-import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';
+import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';*/
+import { priceListContent } from '@/lib/markdowns/price_list';
 
 const triageSystemPrompt = `
 You are a context analysis expert. Your sole job is to identify the most relevant information for a customer service agent.
-The user will provide you with three pieces of information:
+The user will provide you with the following information:
 1. The full set of editable "System Prompt".
 2. The full set of immutable "Service Tips".
 3. The latest "Human-to-Human (H2H) Conversation".
+4. The price list of our products.
 
-Your task is to analyze all three and return ONLY the specific rules and tips that are directly relevant to the current state of the conversation.
+Your task is to analyze all four and return ONLY the specific rules and tips that are directly relevant to the current state of the conversation.
 Do not add any explanation, preamble, or apologies. Only return the raw text of the relevant rules and tips. If no rules are relevant, return an empty string.
 `;
 
@@ -55,33 +56,11 @@ export async function POST(req: Request) {
     ${customerServiceGuidelines}
     --- SERVICE TIPS END ---
 
-    --- PRODUCT INFORMATION START ---
+    --- PRICE LIST START ---
     
-    === COMPANY COMPARISONS (ENGLISH) ===
-    ${comparisonsEnContent}
-    
-    === COMPANY COMPARISONS (VIETNAMESE) ===
-    ${comparisonsVnContent}
-    
-    === WINE STORAGE DIGITAL TEASER ===
-    ${digitalTeaserContent}
-    
-    === SALES CHECKLIST & SIZE VISUALIZATION ===
-    ${sizeVisualisationContent}
-    
-    === WHY WE ARE THE BEST ===
-    ${whyWeAreTheBestContent}
-    
-    === OBJECTION HANDLING GUIDE ===
-    ${objectionHandlingContent}
-    
-    === COMPLETE PRICE LIST ===
     ${priceListContent}
     
-    === COMPANY BROCHURE ===
-    ${brochureContent}
-    
-    --- PRODUCT INFORMATION END ---
+    --- PRICE LIST END ---
     `;
 
     // 3. Create the user message for the Triage Agent.
