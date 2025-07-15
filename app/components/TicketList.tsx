@@ -4,12 +4,34 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealtimeStore } from '../stores/useRealtimeStore';
 import Image from 'next/image';
 
-const FilterIcon = ({ className }: { className: string }) => (
+import FilterDropdown from './FilterDropdown';
+
+const PinIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
   </svg>
 );
 
+const UserIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c2.21 0 4 1.79 4 4v1H8v-1c0-2.21 1.79-4 4-4z" />
+  </svg>
+);
+
+const FilterIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+  </svg>
+);
+
+const getStatusStyles = (status: string | null) => {
+  switch (status?.toLowerCase()) {
+    case 'closed': return 'text-white bg-success-green';
+    case 'on hold': return 'text-white bg-warning-yellow';
+    case 'open':
+    default: return 'text-text bg-gray-200';
+  }
+}
 // Channel icon component
 const ChannelIcon = ({ mode }: { mode: string }) => {
   const getIconPath = (mode: string): string => {
@@ -26,7 +48,7 @@ const ChannelIcon = ({ mode }: { mode: string }) => {
   };
 
   return (
-    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm">
+    <div className="flex flex-shrink-0 w-8 h-8 items-center justify-center">
       <Image 
         src={getIconPath(mode)} 
         alt={`${mode} channel`}
@@ -57,12 +79,8 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
-  // This single, unified useEffect handles both the initial data load AND all filter changes.
   useEffect(() => {
-    const fetchWithFilters = async () => {
-        await fetchTickets(0);
-    }
-    fetchWithFilters();
+    fetchTickets(0);
   }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.view, fetchTickets]);
 
   // IntersectionObserver for infinite scroll
@@ -81,8 +99,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
 
   const handleSelectTicket = async (id: string) => {
     onSelectTicket(id);
-    setSelectedTicket(id);
-    // Mark ticket as read when selected
     await markTicketAsRead(id);
   }
 
@@ -92,6 +108,13 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   const formatMessageTime = (timestamp: string | undefined) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
+
+    // const today = new Date();
+    // const isToday = date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+    // if (isToday) {
+    //   return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    // }
+
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -103,10 +126,16 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
   };
 
   return (
-    <section className="bg-background-gray pt-4 pl-4 border-r border-gray-200 flex flex-col h-full">
-      {/* Header */}
-      <div className="pr-4">
-        <h2 className="pb-2 border-b-2 border-slate-100 text-2xl font-bold text-text">Conversations</h2>
+    <section className="flex flex-col h-full pl-2 bg-background-gray border-r border-gray-200">
+      {/* Header with Dropdown */}
+      <div className="flex items-center justify-between border-b border-gray-200 flex-shrink-0">
+        <FilterDropdown 
+          currentView={filters.view}
+          onSelectView={(view) => setFilters({ view })}
+        />
+        <button className="p-2 text-gray-500 hover:text-accent">
+          <PinIcon className="h-5 w-5" />
+        </button>
       </div>
 
       {/* --- Filter buttons --- */}
@@ -200,24 +229,32 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               }`}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
-              <div className="flex items-center">
-                <div className="flex-1 mr-1">
-                  {/* <div className="flex items-center"> */}
-                    <h3 className={`font-medium line-clamp-2 ${
-                      selectedTicket === ticket.ticket_reference_id 
-                        ? 'text-white' 
-                        : ticket.isUnread 
-                          ? 'text-accent font-semibold' 
-                          : 'text-text'
-                    }`}>
-                      {ticket.subject}
-                    </h3>
-                  <p className={`text-sm ${selectedTicket === ticket.ticket_reference_id ? 'text-sky-blue' : 'text-gray-500'}`}>
-                    {ticket.contact_name}
-                  </p>
-                  {ticket.modified_time && <p className={`text-sm mt-1 ${selectedTicket === ticket.ticket_reference_id ? 'text-blue-100' : 'text-gray-400'}`}>{formatMessageTime(ticket.modified_time)}</p>}
+              <div className="flex items-start justify-between">
+                <h3 className={`text-text line-clamp-2 pr-2 ${ticket.isUnread && 'font-semibold'}`}>
+                  {ticket.subject}
+                </h3>
+                {/* Placeholder for contact avatar */}
+                <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold text-gray-500">
+                    {ticket.ticket_owner ? (
+                      ticket.ticket_owner.split(' ').map(n => n[0]).join('').toUpperCase()
+                    ) : (
+                      <UserIcon className="h-5 w-5 px-2 text-gray-400" />
+                    )}
                 </div>
-                {/* Channel Icon on the right */}
+              </div>
+
+              <div className="flex items-center text-sm text-gray-500">
+                <span>#{ticket.ticket_id}</span>
+                <span className="mx-1.5">&middot;</span>
+                <span className="line-clamp-1">{ticket.contact_name}</span>
+                {/* <span className="mx-1.5">&middot;</span>
+                <span>{formatMessageTime(ticket.modified_time)}</span> */}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getStatusStyles(ticket.status)}`}>
+                  {ticket.status}
+                </span>
                 {ticket.mode && <ChannelIcon mode={ticket.mode} />}
               </div>
             </li>

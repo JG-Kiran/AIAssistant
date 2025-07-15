@@ -15,6 +15,7 @@ export type Thread = {
 };
 
 export type Ticket = {
+  ticket_id: string;
   ticket_reference_id: string;
   contact_name: string;
   subject: string;
@@ -228,6 +229,8 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     let query = supabase
       .from('tickets')
       .select(`
+        ticket_id,
+        status,
         ticket_reference_id, 
         contact_name, 
         subject, 
@@ -274,12 +277,13 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         const userReadRecord = ticket.chat_read?.find((read: any) => read.user === currentUserName);
         
         return {
+          ticket_id: ticket.ticket_id, // Add this
+          status: ticket.status,
           ticket_reference_id: ticket.ticket_reference_id,
           contact_name: ticket.contact_name,
           subject: ticket.subject,
           mode: ticket.mode,
           modified_time: ticket.modified_time,
-          status: ticket.status,
           description: ticket.description,
           created_time: ticket.created_time,
           ticket_owner: ticket.ticket_owner, // Add ticket_owner field
