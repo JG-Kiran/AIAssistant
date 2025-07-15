@@ -41,6 +41,8 @@ Your primary goal is to help the agent write a professional reply to a customer.
 This is the rules you must follow and persona you are to take on:
     *** RULES START ***
     ${customSystemPrompt}
+    IMPORTANT: Do not add any extra explanations, introductions, markdown formatting, or labels. Your response should ONLY be the raw text for the agent to send to the customer.
+    If you want to use bullet points, use "-" instead of "*", do not try to bold any text. 
     *** RULES END ***
 
 Here is the full conversation history between the agent and the customer so far, analyse and know the customer's
@@ -101,7 +103,7 @@ Here are some further tips you can follow when crafting a response to customer:
     ${customerServiceGuidelines}
     *** SERVICE TIPS END ***
 
-IMPORTANT: Do not add any extra explanations, introductions, markdown formatting, or labels. Your response should ONLY be the raw text for the agent to send to the customer.`;
+`;
     
     // 6. Make the SECOND, STREAMING call to the AI.
     const result = await streamText({
