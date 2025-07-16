@@ -73,8 +73,13 @@ function useDebounce(value : string, delay : number) {
   return debouncedValue;
 }
 
-export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: string) => void }) {
-  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+export default function TicketList({ 
+  selectedTicket,
+  onSelectTicket 
+}: { 
+  selectedTicket: string | null,
+  onSelectTicket: (id: string) => void 
+}) {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
   const debouncedSearchText = useDebounce(filters.searchText, 300);
@@ -135,28 +140,6 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
         />
         <button className="p-2 text-gray-500 hover:text-accent">
           <PinIcon className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* --- Filter buttons --- */}
-      <div className="flex items-center space-x-2 my-3 pr-2">
-        <button
-          onClick={() => setFilters({ view: 'all' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'all' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
-        >
-          All Tickets
-        </button>
-        <button
-          onClick={() => setFilters({ view: 'my-tickets' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'my-tickets' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
-        >
-          My Tickets
-        </button>
-        <button
-          onClick={() => setFilters({ view: 'unread' })}
-          className={`px-3 py-1 text-sm font-semibold rounded-full transition ${filters.view === 'unread' ? 'bg-primary text-white' : 'bg-gray-200 text-text hover:bg-gray-300'}`}
-        >
-          Unread
         </button>
       </div>
 
@@ -222,7 +205,7 @@ export default function TicketList({ onSelectTicket }: { onSelectTicket: (id: st
               key={ticket.ticket_reference_id}
               className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${
                 selectedTicket === ticket.ticket_reference_id 
-                  ? 'bg-primary text-white' 
+                  ? 'bg-sky-blue'
                   : ticket.isUnread 
                     ? 'bg-sky-blue border-l-4 border-primary hover:bg-blue-200' 
                     : 'bg-white hover:bg-gray-100'

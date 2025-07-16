@@ -95,7 +95,9 @@ export default function DashboardClient() {
       <div className="hidden md:flex overflow-y-auto overflow-x-hidden h-full w-full flex-1 relative">
         <PanelGroup direction="horizontal">
           <Panel defaultSize={32} minSize={20}>
-            <TicketList onSelectTicket={handleSelectTicket} />
+            <TicketList 
+              selectedTicket={selectedTicketId}
+              onSelectTicket={handleSelectTicket} />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
           <Panel defaultSize={33} minSize={30}>
@@ -130,7 +132,10 @@ export default function DashboardClient() {
                 setMessage={setMessage}
               />
             ) : (
-              <TicketList onSelectTicket={handleSelectTicket} />
+              <TicketList 
+                selectedTicket={selectedTicketId}
+                onSelectTicket={handleSelectTicket} 
+              />
             )}
           </div>
 
