@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import { supabase } from '../../../lib/supabase';
+
 import { TicketPayload, ThreadPayload } from './types';
+import { Ticket } from 'types/ticket';
+import { Thread } from 'types/thread';
 
 const isEmptyObject = (obj: any) => {
   return obj && Object.keys(obj).length === 0 && obj.constructor === Object;
@@ -9,14 +12,14 @@ const isEmptyObject = (obj: any) => {
 export async function POST(request: NextRequest) {
   try {
     const rawPayload = await request.json();
-
+     
     if (isEmptyObject(rawPayload)) {
       console.log('✅ Received empty webhook test from Zoho. Responding with 200 OK.');
       return new Response('Webhook test successful.', { status: 200 });
     }
 
+    // Validate that the payload is an array of events.
     const eventArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
-    // Validate that the payload is an array.
     if (!Array.isArray(eventArray)) {
       console.error('❌ Expected an array of events, but received a different type.');
       return new Response('Invalid payload format: Expected an array.', { status: 400 });
@@ -30,12 +33,11 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      console.log('Received Zoho Webhook (Raw Event Object):', event); // Log the whole object
+      console.log('Received Zoho Webhook (Raw Event Object):', event);
 
       const payload = event?.payload;
       const eventType = event.eventType;
 
-      // Add checks for common issues like null/undefined eventType
       if (!eventType) {
         console.error('❌ eventType is missing or null/undefined in the webhook payload.');
         continue;
@@ -251,10 +253,9 @@ export async function POST(request: NextRequest) {
 
         const ticketId = payload.id;
 
-        // We must have a ticket ID to know which record to update.
         if (!ticketId) {
           console.error('❌ Ticket_Update event received without a ticket ID. Skipping.');
-          continue; // Skip to the next event in the loop
+          continue;
         }
 
         // Create a dynamic object to hold only the fields present in the payload.
