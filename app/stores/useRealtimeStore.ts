@@ -26,6 +26,11 @@ export type Ticket = {
   created_time: string;
   ticket_owner: string | null;
   isUnread: boolean;
+  due_date: string | null,
+  is_overdue: boolean | null,
+  response_due_date: string | null,
+  is_response_overdue: boolean | null,
+  ticket_closed_time: string | null,
 };
 
 export type TicketFilters = { 
@@ -228,17 +233,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     // Build query with LEFT JOIN to chat_read table
     let query = supabase
       .from('tickets')
-      .select(`
-        ticket_id,
-        status,
-        ticket_reference_id, 
-        contact_name, 
-        subject, 
-        mode, 
-        modified_time,
-        ticket_owner,
-        chat_read!left(last_read, "user")
-      `, { count: 'exact' })
+      .select('*, status, ticket_closed_time, chat_read!left(last_read, "user")', { count: 'exact' })
       .order('modified_time', { ascending: false })
       .range(from, to);
 
@@ -277,16 +272,20 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         const userReadRecord = ticket.chat_read?.find((read: any) => read.user === currentUserName);
         
         return {
-          ticket_id: ticket.ticket_id, // Add this
+          ticket_id: ticket.ticket_id,
           status: ticket.status,
           ticket_reference_id: ticket.ticket_reference_id,
           contact_name: ticket.contact_name,
+          ticket_owner: ticket.ticket_owner,
           subject: ticket.subject,
           mode: ticket.mode,
+          created_time: ticket.created_time,
           modified_time: ticket.modified_time,
           description: ticket.description,
-          created_time: ticket.created_time,
-          ticket_owner: ticket.ticket_owner, // Add ticket_owner field
+          due_date: ticket.due_date,
+          is_overdue: ticket.is_overdue,
+          response_due_date: ticket.response_due_date,
+          is_response_overdue: ticket.is_response_overdue,
           isUnread: !userReadRecord || 
                     !userReadRecord.last_read || 
                     new Date(ticket.modified_time) > new Date(userReadRecord.last_read)

@@ -5,6 +5,7 @@ import { useRealtimeStore } from '../stores/useRealtimeStore';
 import Image from 'next/image';
 
 import FilterDropdown from './FilterDropdown';
+import Countdown from './Countdown';
 
 const PinIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -203,13 +204,10 @@ export default function TicketList({
             <li
               ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer transition-colors ${
-                selectedTicket === ticket.ticket_reference_id 
-                  ? 'bg-sky-blue'
-                  : ticket.isUnread 
-                    ? 'bg-sky-blue border-l-4 border-primary hover:bg-blue-200' 
-                    : 'bg-white hover:bg-gray-100'
-              }`}
+              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer bg-white hover:bg-blue-200 transition-colors
+                ${selectedTicket === ticket.ticket_reference_id && 'bg-blue-100'} 
+                ${ ticket.isUnread && 'border-l-4 border-primary'}
+              `}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
               <div className="flex items-start justify-between">
@@ -233,6 +231,17 @@ export default function TicketList({
                 {/* <span className="mx-1.5">&middot;</span>
                 <span>{formatMessageTime(ticket.modified_time)}</span> */}
               </div>
+
+              {ticket.status !== 'Closed' && (
+              <div className="flex items-center text-sm text-gray-500">
+                <Countdown 
+                  responseDueDate={ticket.response_due_date} 
+                  resolutionDueDate={ticket.due_date}
+                  status={ticket.status}
+                  closedTime={ticket.ticket_closed_time}
+                />
+              </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getStatusStyles(ticket.status)}`}>
