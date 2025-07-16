@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { TicketFilters } from '../stores/useRealtimeStore';
+import { TicketFilters, useRealtimeStore } from '../stores/useRealtimeStore';
 
 const ChevronDownIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -22,17 +22,16 @@ const viewLabels: { [key in TicketFilters['view']]: string } = {
   'unassigned': 'Unassigned',
 };
 
-interface FilterDropdownProps {
-  currentView: TicketFilters['view'];
-  onSelectView: (view: TicketFilters['view']) => void;
-}
-
-export default function FilterDropdown({ currentView, onSelectView }: FilterDropdownProps) {
+// Removed props, now uses store directly
+export default function FilterDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { filters, setFilters } = useRealtimeStore();
+
+  const currentView = filters.view;
 
   const handleSelect = (view: TicketFilters['view']) => {
-    onSelectView(view);
+    setFilters({ ...filters, view });
     setIsOpen(false);
   };
 
@@ -59,13 +58,13 @@ export default function FilterDropdown({ currentView, onSelectView }: FilterDrop
 
       {isOpen && (
         <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-          <div className="p-2">
+          {/* <div className="p-2">
             <input 
               type="text" 
               placeholder="Search View"
               className="w-full p-2 border border-gray-300 rounded-md"
             />
-          </div>
+          </div> */}
           <div className="px-4 py-2">
             <h4 className="text-xs font-bold text-gray-400">ALL VIEWS</h4>
           </div>

@@ -25,6 +25,12 @@ const FilterIcon = ({ className }: { className: string }) => (
   </svg>
 );
 
+const SearchIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
 const getStatusStyles = (status: string | null) => {
   switch (status?.toLowerCase()) {
     case 'closed': return 'text-white bg-success-green';
@@ -81,12 +87,16 @@ export default function TicketList({
   selectedTicket: string | null,
   onSelectTicket: (id: string) => void 
 }) {
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
   useEffect(() => {
-    fetchTickets(0);
+    const fetchWithFilters = async () => {
+      await fetchTickets(0);
+  }
+  fetchWithFilters();
   }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.view, fetchTickets]);
 
   // IntersectionObserver for infinite scroll
@@ -135,18 +145,22 @@ export default function TicketList({
     <section className="flex flex-col h-full pl-2 bg-background-gray border-r border-gray-200">
       {/* Header with Dropdown */}
       <div className="flex items-center justify-between border-b border-gray-200 flex-shrink-0">
-        <FilterDropdown 
-          currentView={filters.view}
-          onSelectView={(view) => setFilters({ view })}
-        />
-        <button className="p-2 text-gray-500 hover:text-accent">
-          <PinIcon className="h-5 w-5" />
+        <FilterDropdown />
+        <button 
+          onClick={() => setIsSearchVisible(!isSearchVisible)}
+          className={`p-2 rounded-md transition-colors hover:bg-gray-100 ${isSearchVisible ? 'border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500'}`}
+          aria-label="Toggle search"
+        >
+          <SearchIcon className="h-5 w-5" />
         </button>
+        {/* <button className="p-2 text-gray-500 hover:text-accent">
+          <PinIcon className="h-5 w-5" />
+        </button> */}
       </div>
 
       {/* Search and Filter Section */}
-      <div className="my-2 pr-2 space-y-2">
-        <div className="flex items-center gap-2">
+      <div className="my-1 pr-2 flex-shrink-0">
+        <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-40' : 'max-h-0'}`}>
           <input
             type="text"
             placeholder={filters.searchType === 'name' ? "Search by name..." : "Search by reference..."}
