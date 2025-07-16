@@ -197,7 +197,7 @@ export default function AIResponsePanel({
         </div>
         
         {/* --- Quick Suggestion Button --- */}
-        <div className="m-2 from-red-500 via-yellow-500 via-green-500 to-blue-500 rounded-lg">
+        <div className="m-2 rounded-lg">
           <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2.5 text-white font-semibold rounded-md disabled:opacity-60 transition bg-gray-500 hover:bg-gray-800 shadow-md">
             {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
           </button>

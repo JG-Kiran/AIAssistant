@@ -6,7 +6,7 @@ export type Thread = {
   author_name?: string | null;
   author_type?: string | null;
   message?: string | null;
-  created_time?: Date | null;
+  created_time?: string | null;
   channel?: string | null;
   direction?: string | null;
 };

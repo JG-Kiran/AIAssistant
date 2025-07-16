@@ -16,11 +16,11 @@ export type Ticket = {
   ticket_owner?: string | null;
   ticket_owner_id?: string | null;
   created_by?: string | null;
-  created_by_id?: number | null;
+  created_by_id?: string | null;
   modified_by?: string | null;
   modified_by_id?: string | null;
-  created_time?: Date | null;
-  modified_time?: Date | null;
+  created_time?: string | null;
+  modified_time?: string | null;
   resolution?: string | null;
   to_address?: string | null;
   account_name?: string | null;

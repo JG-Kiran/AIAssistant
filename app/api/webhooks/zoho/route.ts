@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
         const threadPayload: ThreadPayload = payload;
         
         // Validate required fields
-        if (!threadPayload.ticketId || !threadPayload.content || !threadPayload.direction) {
+        if (!threadPayload.id || !threadPayload.ticketId || !threadPayload.content || !threadPayload.direction) {
           console.error('❌ Missing required fields in thread payload:', {
+            id: !!threadPayload.id,
             ticketId: !!threadPayload.ticketId,
             content: !!threadPayload.content,
             direction: !!threadPayload.direction
@@ -70,8 +71,8 @@ export async function POST(request: NextRequest) {
           if (existingThread) {
             console.log(`Thread with id ${threadPayload.id} already exists. Skipping insert.`);
           } else {
-            // Prepare thread data for Supabase (only fields in threads table schema)
-            const threadData = {
+            // Prepare thread data for Supabase
+            const threadData: Thread = {
               id: threadPayload.id,
               ticket_reference_id: threadPayload.ticketId,
               author_id: threadPayload.author?.id || null,
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
             };
 
             // Insert the thread into Supabase
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('threads')
               .insert([threadData])
               .select();
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
               return new Response('Database error', { status: 500 });
             }
 
-            // Update the ticket with any relevant fields present in the thread payload
+            // Update corresponding ticket data 
             try {
               const ticketUpdate: any = {};
               // Set modified_time, modified_by, modified_by_id
@@ -103,16 +104,7 @@ export async function POST(request: NextRequest) {
                 ticketUpdate.modified_by = threadPayload.author.name || null;
                 ticketUpdate.modified_by_id = threadPayload.author.id || null;
               }
-              // Example: update status, priority, assignee, etc. if present in threadPayload
               if ('status' in threadPayload) ticketUpdate.status = threadPayload.status;
-              if ('priority' in threadPayload) ticketUpdate.priority = threadPayload.priority;
-              if ('assignee' in threadPayload && typeof threadPayload.assignee === 'object' && threadPayload.assignee !== null) {
-                const assignee = threadPayload.assignee as { firstName?: string; lastName?: string; id?: string };
-                ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
-                ticketUpdate.ticket_owner_id = ('assigneeId' in threadPayload) ? threadPayload.assigneeId : assignee.id;
-              } else if ('assigneeId' in threadPayload) {
-                ticketUpdate.ticket_owner_id = threadPayload.assigneeId;
-              }
 
               const { error: updateError } = await supabase
                 .from('tickets')
@@ -121,7 +113,6 @@ export async function POST(request: NextRequest) {
 
               if (updateError) {
                 console.warn('⚠️ Warning: Could not update ticket fields:', updateError);
-                // Don't fail the webhook for this, just log the warning
               } else {
                 console.log('✅ Updated ticket fields for:', threadPayload.ticketId);
               }
@@ -137,11 +128,21 @@ export async function POST(request: NextRequest) {
 
       if (eventType === 'Ticket_Add') {
         const ticketPayload: TicketPayload = payload;
-        console.log('🎟️ New ticket created:', ticketPayload);
-        // Map Zoho payload fields to tickets table schema using the interface
-        const ticketData = {
-          ticket_id: ticketPayload.ticketNumber || null,
-          ticket_reference_id: ticketPayload.id || null,
+
+        // Validate required fields
+        if (!ticketPayload.id || !ticketPayload.ticketNumber) {
+          console.error('❌ Missing required fields in ticket payload:', {
+            ticket_id: !!ticketPayload.ticketNumber,
+            ticket_reference_id: !!ticketPayload.id
+          });
+          return new Response('Missing required ticket fields', { status: 400 });
+        }
+
+        // Prepare ticket data for Supabase
+        const ticketData: Ticket = {
+          // Commented out fields are present in table but not payload.
+          ticket_id: ticketPayload.ticketNumber,
+          ticket_reference_id: ticketPayload.id,
           contact_name: ticketPayload.contact ? [ticketPayload.contact.firstName, ticketPayload.contact.lastName].filter(Boolean).join(' ') : null,
           contact_id: ticketPayload.contactId || ticketPayload.contact?.id || null,
           ticket_owner: ticketPayload.assignee ? [ticketPayload.assignee.firstName, ticketPayload.assignee.lastName].filter(Boolean).join(' ') : null,
@@ -181,20 +182,11 @@ export async function POST(request: NextRequest) {
           team_id: ticketPayload.teamId || null,
           // tags: 
           ticket_on_hold_time: ticketPayload.onholdTime || '0',
-          child_ticket_count: '0',
+          // child_ticket_count:
         };
 
-        // Validate required fields
-        if (!ticketData.ticket_id || !ticketData.ticket_reference_id) {
-          console.error('❌ Missing required ticket fields:', {
-            ticket_id: !!ticketData.ticket_id,
-            ticket_reference_id: !!ticketData.ticket_reference_id
-          });
-          return new Response('Missing required ticket fields', { status: 400 });
-        }
-
         try {
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('tickets')
             .insert([ticketData])
             .select();
@@ -202,7 +194,7 @@ export async function POST(request: NextRequest) {
             console.error('❌ Error inserting ticket into Supabase:', error);
             return new Response('Database error', { status: 500 });
           }
-          console.log('✅ Ticket inserted:', data);
+          console.log('✅ Ticket inserted. Reference: ', ticketData.ticket_reference_id);
 
           // If there is a firstThread, insert it into the threads table
           if (payload.firstThread) {
@@ -248,66 +240,76 @@ export async function POST(request: NextRequest) {
       }
 
       if (eventType === 'Ticket_Update') {
-        console.log('🔄 Ticket updated:', payload);
-        console.log('🔄 Ticket update received:', payload);
+        const ticketPayload: TicketPayload = payload;
 
-        const ticketId = payload.id;
-
-        if (!ticketId) {
-          console.error('❌ Ticket_Update event received without a ticket ID. Skipping.');
-          continue;
+        // Validate required fields
+        if (!ticketPayload.id || !ticketPayload.ticketNumber) {
+          console.error('❌ Missing required fields in ticket payload:', {
+            ticket_id: !!ticketPayload.ticketNumber,
+            ticket_reference_id: !!ticketPayload.id
+          });
+          return new Response('Missing required ticket fields', { status: 400 });
         }
+        // Prepare new ticket data for Supabase
+        const ticketUpdate: Ticket = {
+          // Commented out fields are present in table but not payload.
+          ticket_id: ticketPayload.ticketNumber,
+          ticket_reference_id: ticketPayload.id,
+          contact_name: ticketPayload.contact ? [ticketPayload.contact.firstName, ticketPayload.contact.lastName].filter(Boolean).join(' ') : null,
+          contact_id: ticketPayload.contactId || ticketPayload.contact?.id || null,
+          ticket_owner: ticketPayload.assignee ? [ticketPayload.assignee.firstName, ticketPayload.assignee.lastName].filter(Boolean).join(' ') : null,
+          ticket_owner_id: ticketPayload.assigneeId || ticketPayload.assignee?.id || null,
+          modified_by_id: ticketPayload.modifiedBy || null,
+          created_time: ticketPayload.createdTime || null,
+          modified_time: ticketPayload.modifiedTime || null,
+          status: ticketPayload.status || null,
+          due_date: ticketPayload.dueDate || null,
+          is_overdue: ticketPayload.isOverDue || null,
+          response_due_date: ticketPayload.responseDueDate || null,
+          is_response_overdue: ticketPayload.isResponseOverdue || null,
+          priority: ticketPayload.priority || null,
+          mode: ticketPayload.channel || null,
+          ticket_closed_time: ticketPayload.closedTime || null,
+          is_escalated: ticketPayload.isEscalated || null,
+          // time_to_respond: 
+          language: ticketPayload.language || null,
+          email: ticketPayload.email || ticketPayload.contact?.email || null,
+          phone: ticketPayload.phone || ticketPayload.contact?.phone || null,
+          subject: ticketPayload.subject || null,
+          description: ticketPayload.description || null,
+          // department: '',
+          department_id: ticketPayload.departmentId || null,
+          // product_name: 
+          product_id: ticketPayload.productId || null,
+          // created_by: 
+          created_by_id: ticketPayload.createdBy || null,
+          resolution: ticketPayload.resolution || null,
+          // to_address: 
+          // account_name: 
+          account_id: ticketPayload.accountId || null,
+          category: ticketPayload.category || null,
+          sub_category: ticketPayload.subCategory || null,
+          classification: ticketPayload.classification || null,
+          // team: 
+          team_id: ticketPayload.teamId || null,
+          // tags: 
+          ticket_on_hold_time: ticketPayload.onholdTime || '0',
+          // child_ticket_count:
+        };
 
-        // Create a dynamic object to hold only the fields present in the payload.
-        // This prevents us from overwriting existing data with null.
-        const ticketUpdate: { [key: string]: any } = {};
-
-        // Map all potential fields from the Zoho payload to your table schema.
-        if (payload.assignee || payload.assigneeId) {
-          if (payload.assignee && typeof payload.assignee === 'object') {
-            const assignee = payload.assignee as { firstName?: string; lastName?: string; id?: string };
-            ticketUpdate.ticket_owner = [assignee.firstName, assignee.lastName].filter(Boolean).join(' ');
-            ticketUpdate.ticket_owner_id = assignee.id || payload.assigneeId;
-          } else {
-            ticketUpdate.ticket_owner_id = payload.assigneeId;
+        try {
+          const { error } = await supabase
+            .from('tickets')
+            .insert([ticketUpdate])
+            .select();
+          if (error) {
+            console.error('❌ Error inserting ticket into Supabase:', error);
+            return new Response('Database error', { status: 500 });
           }
-        }
-
-        if (payload.modifiedTime) ticketUpdate.modified_time = payload.modifiedTime;
-        if (payload.modifiedBy) ticketUpdate.modified_by_id = payload.modifiedBy;
-        if (payload.status) ticketUpdate.status = payload.status;
-        if (payload.priority) ticketUpdate.priority = payload.priority;
-        if (payload.channel) ticketUpdate.mode = payload.channel;
-        if (payload.language) ticketUpdate.language = payload.language;
-        if (payload.dueDate) ticketUpdate.due_date = payload.dueDate;
-        if (payload.closedTime) ticketUpdate.ticket_closed_time = payload.closedTime;
-        if (typeof payload.isOverDue === 'boolean') ticketUpdate.is_overdue = payload.isOverDue;
-        if (typeof payload.isEscalated === 'boolean') ticketUpdate.is_escalated = payload.isEscalated;
-        if (payload.subject) ticketUpdate.subject = payload.subject;
-        if (payload.description) ticketUpdate.description = payload.description;
-        if (payload.resolution) ticketUpdate.resolution = payload.resolution;
-        if (payload.departmentId) ticketUpdate.department_id = payload.departmentId;
-        if (payload.productId) ticketUpdate.product_id = payload.productId;
-        if (payload.category) ticketUpdate.category = payload.category;
-        if (payload.subCategory) ticketUpdate.sub_category = payload.subCategory;
-        if (payload.classification) ticketUpdate.classification = payload.classification;
-        if (payload.teamId) ticketUpdate.team_id = payload.teamId;
-        if (payload.onholdTime) ticketUpdate.ticket_on_hold_time = payload.onholdTime;
-
-        // Check if there's anything to update.
-        if (Object.keys(ticketUpdate).length > 0) {
-          const { error: updateError } = await supabase
-              .from('tickets')
-              .update(ticketUpdate)
-              .eq('ticket_reference_id', ticketId);
-
-          if (updateError) {
-              console.error(`❌ Error updating ticket ${ticketId}:`, updateError);
-          } else {
-              console.log(`✅ Successfully updated ticket: ${ticketId}`);
-          }
-        } else {
-          console.log(`No relevant fields to update for ticket: ${ticketId}. Skipping.`);
+          console.log('✅ Ticket inserted. Reference: ', ticketUpdate.ticket_reference_id);
+        } catch (dbError) {
+          console.error('❌ Database operation failed:', dbError);
+          return new Response('Database operation failed', { status: 500 });
         }
       }
 
