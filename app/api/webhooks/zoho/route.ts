@@ -147,11 +147,14 @@ export async function POST(request: NextRequest) {
           modified_by_id: ticketPayload.modifiedBy || null,
           created_time: ticketPayload.createdTime || null,
           modified_time: ticketPayload.modifiedTime || null,
+          status: ticketPayload.status || null,
           due_date: ticketPayload.dueDate || null,
+          is_overdue: ticketPayload.isOverDue || null,
+          response_due_date: ticketPayload.responseDueDate || null,
+          is_response_overdue: ticketPayload.isResponseOverdue || null,
           priority: ticketPayload.priority || null,
           mode: ticketPayload.channel || null,
           ticket_closed_time: ticketPayload.closedTime || null,
-          is_overdue: ticketPayload.isOverDue || null,
           is_escalated: ticketPayload.isEscalated || null,
           // time_to_respond: 
           language: ticketPayload.language || null,
@@ -159,7 +162,6 @@ export async function POST(request: NextRequest) {
           phone: ticketPayload.phone || ticketPayload.contact?.phone || null,
           subject: ticketPayload.subject || null,
           description: ticketPayload.description || null,
-          status: ticketPayload.status || null,
           // department: '',
           department_id: ticketPayload.departmentId || null,
           // product_name: 
