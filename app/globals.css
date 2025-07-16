@@ -26,3 +26,25 @@
         font-family: 'Noto Sans', sans-serif;
     }
 }
+
+@layer utilities {
+    /* For thin, gray scrollbars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #9ca3af #e5e7eb; /* thumb and track color */
+  }
+
+  /* For Webkit-based browsers (Chrome, Safari) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #e5e7eb; /* gray-200 for the track */
+    border-radius: 10px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #9ca3af; /* gray-400 for the thumb */
+    border-radius: 10px;
+    border: 2px solid #e5e7eb; /* Creates a padding effect with the track color */
+    }
+}
