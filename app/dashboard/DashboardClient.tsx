@@ -57,7 +57,6 @@ export default function DashboardClient() {
     }
   };
 
-
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login');
@@ -105,6 +104,7 @@ export default function DashboardClient() {
               selectedTicketId={selectedTicketId}
               message={message}
               setMessage={setMessage}
+              onBackToTickets={handleBackToTickets}
             />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
@@ -130,6 +130,7 @@ export default function DashboardClient() {
                 selectedTicketId={selectedTicketId}
                 message={message}
                 setMessage={setMessage}
+                onBackToTickets={handleBackToTickets}
               />
             ) : (
               <TicketList 

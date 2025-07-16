@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { supabase } from '../lib/supabase'
 import { useRealtimeStore } from '../stores/useRealtimeStore';
@@ -15,78 +15,22 @@ export interface ChatMessage {
   created_at?: string;
 }
 
-export interface TicketDetails {
-  contact_name: string;
-  subject?: string;
-  ticket_reference_id?: string;
-  mode?: string;
-  email?: string;
-  description?: string;
-  created_time?: string;
-  status?: string;
-  ticket_owner_id?: string;
-}
-
-interface AgentData {
-  id: string;
-  name: string;
-  photoURL: string;
-  emailId: string;
-}
-
 export default function CustomerChat({ 
   selectedTicketId,
   message,
   setMessage,
+  onBackToTickets,
 }: { 
   selectedTicketId: string | null,
   message: string,
   setMessage: (value: string) => void,
+  onBackToTickets: () => void,
 }) {
-  const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null);
-  const [agentData, setAgentData] = useState<AgentData | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const { threadsByTicketId, setInitialThreadsForTicket } = useRealtimeStore();
+  const { threadsByTicketId, setInitialThreadsForTicket, selectedTicketDetails: ticketDetails } = useRealtimeStore();
 
-  // This effect now fetches initial messages and puts them in the GLOBAL store
   useEffect(() => {
-    if (!selectedTicketId) return;
-
-    const fetchAndSetData = async () => {  
-      const [threadsRes, ticketRes] = await Promise.all([
-        supabase
-          .from('threads')
-          .select('*')
-          .eq('ticket_reference_id', selectedTicketId)
-          .order('created_time', { ascending: true }),
-        supabase
-          .from('tickets')
-          .select('*')
-          .eq('ticket_reference_id', selectedTicketId)
-          .single()
-      ]);
-
-      if (ticketRes.data && threadsRes.data) {
-        setTicketDetails(ticketRes.data);
-        setInitialThreadsForTicket(selectedTicketId, threadsRes.data, ticketRes.data);
-        
-        // Fetch agent data if ticket has an owner
-        if (ticketRes.data.ticket_owner_id) {
-          const { data: agentRes, error: agentError } = await supabase
-            .from('agents')
-            .select('id, name, photoURL, emailId')
-            .eq('id', ticketRes.data.ticket_owner_id)
-            .single();
-          
-          if (agentRes && !agentError) {
-            setAgentData(agentRes);
-          }
-        } else {
-          setAgentData(null);
-        }
-      }
-    };
-    fetchAndSetData();
+    setInitialThreadsForTicket(selectedTicketId);
   }, [selectedTicketId, setInitialThreadsForTicket]);
 
   // Use useMemo to efficiently get the messages for the currently selected ticket.
@@ -94,43 +38,6 @@ export default function CustomerChat({
     if (!selectedTicketId) return [];
     return threadsByTicketId.get(selectedTicketId) || [];
   }, [threadsByTicketId, selectedTicketId]);
-
-  useEffect(() => {
-    if (!selectedTicketId) {
-      setTicketDetails(null);
-      setAgentData(null);
-      return;
-    }
-    const fetchTicketDetails = async () => { 
-      const { data, error } = await supabase
-        .from('tickets')
-        .select('*')
-        .eq('ticket_reference_id', selectedTicketId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching ticket details:', error);
-        return;
-      }
-      setTicketDetails(data);
-      
-      // Fetch agent data if ticket has an owner
-      if (data.ticket_owner_id) {
-        const { data: agentRes, error: agentError } = await supabase
-          .from('agents')
-          .select('id, name, photoURL, emailId')
-          .eq('id', data.ticket_owner_id)
-          .single();
-        
-        if (agentRes && !agentError) {
-          setAgentData(agentRes);
-        }
-      } else {
-        setAgentData(null);
-      }
-    };
-    fetchTicketDetails();
-  }, [selectedTicketId]);
 
   // Autoscroll to bottom when chat opened (Using Zustand)
   useEffect(() => {
@@ -211,15 +118,25 @@ export default function CustomerChat({
     <section className="flex flex-col h-full bg-white p-3 overflow-hidden">
       <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-accent line-clamp-2">
-              {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
-            </h2>
-            {ticketDetails?.contact_name && ticketDetails?.mode && (
-              <p className="text-sm text-text">
-                {ticketDetails.contact_name} - {ticketDetails.mode}
-              </p>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBackToTickets}
+              className="md:hidden p-2 rounded-full hover:bg-gray-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-accent line-clamp-2">
+                {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}
+              </h2>
+              {ticketDetails?.contact_name && ticketDetails?.mode && (
+                <p className="text-sm text-text">
+                  {ticketDetails.contact_name} - {ticketDetails.mode}
+                </p>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-3">
@@ -228,28 +145,6 @@ export default function CustomerChat({
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticketDetails.status)}`}>
                 {ticketDetails.status}
               </span>
-            )}
-            
-            {/* Agent Photo */}
-            {agentData?.photoURL ? (
-              <img 
-                src={agentData.photoURL} 
-                alt={`${agentData.name || 'Agent'}'s profile`}
-                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                onError={(e) => {
-                  // Fallback to initials if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  target.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            
-            {/* Fallback for agent initials when no photo or photo fails */}
-            {agentData && (
-              <div className={`w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium text-sm ${agentData.photoURL ? 'hidden' : ''}`}>
-                {agentData.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'A'}
-              </div>
             )}
           </div>
         </div>

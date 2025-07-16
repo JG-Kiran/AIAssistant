@@ -2,16 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealtimeStore } from '../stores/useRealtimeStore';
+import { useSessionStore } from '@/stores/useSessionStore';
 import Image from 'next/image';
 
 import FilterDropdown from './FilterDropdown';
 import Countdown from './Countdown';
-
-const PinIcon = ({ className }: { className: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-);
 
 const UserIcon = ({ className }: { className: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -90,13 +85,14 @@ export default function TicketList({
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const { tickets, filters, setFilters, loadMoreTickets, hasMoreTickets, fetchTickets, markTicketAsRead } = useRealtimeStore();
+  const { allAgents } = useSessionStore();
   const debouncedSearchText = useDebounce(filters.searchText, 300);
 
   useEffect(() => {
     const fetchWithFilters = async () => {
       await fetchTickets(0);
-  }
-  fetchWithFilters();
+    }
+    fetchWithFilters();
   }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.view, fetchTickets]);
 
   // IntersectionObserver for infinite scroll
@@ -153,9 +149,6 @@ export default function TicketList({
         >
           <SearchIcon className="h-5 w-5" />
         </button>
-        {/* <button className="p-2 text-gray-500 hover:text-accent">
-          <PinIcon className="h-5 w-5" />
-        </button> */}
       </div>
 
       {/* Search and Filter Section */}
@@ -214,13 +207,16 @@ export default function TicketList({
       {/* Ticket List */}
       <div className="overflow-y-auto mr-1 flex-1">
         <ul>
-          {tickets.map((ticket, index) => (
+          {tickets.map((ticket, index) => {
+            const assignedAgent = ticket.ticket_owner_id ? allAgents.get(ticket.ticket_owner_id) : null;
+            
+            return (
             <li
               ref={index === tickets.length - 1 ? lastTicketElementRef : null}
               key={ticket.ticket_reference_id}
-              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer bg-white hover:bg-blue-200 transition-colors
-                ${selectedTicket === ticket.ticket_reference_id && 'bg-blue-100'} 
-                ${ ticket.isUnread && 'border-l-4 border-primary'}
+              className={`p-3 mb-2 mr-2 rounded-md cursor-pointer bg-white hover:bg-blue-300 transition-colors
+                ${selectedTicket === ticket.ticket_reference_id && 'bg-blue-200'} 
+                ${ticket.isUnread && 'border-l-4 border-primary'}
               `}
               onClick={() => handleSelectTicket(ticket.ticket_reference_id)}
             >
@@ -230,11 +226,15 @@ export default function TicketList({
                 </h3>
                 {/* Placeholder for contact avatar */}
                 <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-sm font-bold text-gray-500">
-                    {ticket.ticket_owner ? (
-                      ticket.ticket_owner.split(' ').map(n => n[0]).join('').toUpperCase()
-                    ) : (
-                      <UserIcon className="h-5 w-5 px-2 text-gray-400" />
-                    )}
+                  {assignedAgent?.photoURL ? (
+                    <img
+                      src={assignedAgent.photoURL}
+                      alt={assignedAgent.name || 'Agent'}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserIcon className="h-6 w-6 text-gray-400" />
+                  )}
                 </div>
               </div>
 
@@ -264,7 +264,8 @@ export default function TicketList({
                 {ticket.mode && <ChannelIcon mode={ticket.mode} />}
               </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       </div>
     </section>

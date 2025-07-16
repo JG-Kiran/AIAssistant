@@ -22,9 +22,11 @@ export type Ticket = {
   mode: string;
   modified_time: string;
   status: string | null;
+  email: string | null;
   description: string | null;
   created_time: string;
   ticket_owner: string | null;
+  ticket_owner_id: string | null;
   isUnread: boolean;
   due_date: string | null,
   is_overdue: boolean | null,
@@ -50,9 +52,10 @@ interface RealtimeState {
   page: number;
   hasMoreTickets: boolean;
   filters: TicketFilters;
+  selectedTicketDetails: Ticket | null;
   initialize: () => void;
   close: () => void;
-  setInitialThreadsForTicket: (ticketId: string, threads: Thread[], ticketDetails: Ticket) => void;
+  setInitialThreadsForTicket: (ticketId: string | null) => Promise<void>;
   setFilters: (newFilters: Partial<TicketFilters>) => void;
   fetchTickets: (pageToFetch?: number) => Promise<void>;
   loadMoreTickets: () => void;
@@ -71,6 +74,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     view: 'all',
   },
   channel: null,
+  selectedTicketDetails: null,
 
   initialize: () => {
     // Prevent creating duplicate connections
@@ -183,29 +187,72 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   },
 
   // This action will set the initial, fetched messages for a ticket.
-  setInitialThreadsForTicket: (ticketId, threads, ticketDetails) => {
-    set(state => {
-      const newMap = new Map(state.threadsByTicketId);
-      let finalMessages = threads.map(msg => ({
-        ...msg,
-        message: convert(msg.message || '', { wordwrap: 130 }),
-      }));
-      if (ticketDetails?.description) {
-        const descriptionMessage: Thread = {
-          id: 0,
-          ticket_id: ticketId,
-          ticket_reference_id: ticketId,
-          message: convert(ticketDetails.description, { wordwrap: 130 }),
-          author_type: 'CUSTOMER',
-          direction: 'in',
-          author_name: ticketDetails.contact_name || 'Customer',
-          created_time: ticketDetails.created_time,
-        };
-        finalMessages = [descriptionMessage, ...finalMessages];
+  setInitialThreadsForTicket: async (ticketId: string | null) => {
+    if (!ticketId) {
+      set({ selectedTicketDetails: null });
+      return;
+    }
+
+    if (get().threadsByTicketId.has(ticketId)) {
+      const ticketDetails = get().tickets.find(t => t.ticket_reference_id === ticketId) || null;
+      set({ selectedTicketDetails: ticketDetails });
+      return;
+    }
+
+    set({ selectedTicketDetails: null });
+
+    try {
+      const [threadsRes, ticketRes] = await Promise.all([
+        supabase
+          .from('threads')
+          .select('*')
+          .eq('ticket_reference_id', ticketId)
+          .order('created_time', { ascending: true }),
+        supabase
+          .from('tickets')
+          .select('*')
+          .eq('ticket_reference_id', ticketId)
+          .single()
+      ]);
+
+      if (ticketRes.error || threadsRes.error) {
+        throw new Error(ticketRes.error?.message || threadsRes.error?.message);
       }
-      newMap.set(ticketId, finalMessages);
-      return { threadsByTicketId: newMap };
-    });
+
+      const ticketDetails = ticketRes.data as Ticket;
+      const threads = (threadsRes.data || []) as Thread[];
+
+      set(state => {
+        const newMap = new Map(state.threadsByTicketId);
+        let finalMessages = threads.map(msg => ({
+          ...msg,
+          message: convert(msg.message || '', { wordwrap: 130 }),
+        }));
+
+        if (ticketDetails?.description) {
+          const descriptionMessage: Thread = {
+            id: 0,
+            ticket_id: ticketId,
+            ticket_reference_id: ticketId,
+            message: convert(ticketDetails.description, { wordwrap: 130 }),
+            author_type: 'CUSTOMER',
+            direction: 'in',
+            author_name: ticketDetails.contact_name || 'Customer',
+            created_time: ticketDetails.created_time,
+          };
+          finalMessages = [descriptionMessage, ...finalMessages];
+        }
+
+        newMap.set(ticketId, finalMessages);
+        return {
+          threadsByTicketId: newMap,
+          selectedTicketDetails: ticketDetails,
+        };
+      });
+    } catch (error) {
+      console.error("Error fetching threads for ticket:", error);
+      set({ selectedTicketDetails: null });
+    }
   },
 
   setFilters: (newFilters) => {
@@ -277,6 +324,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
           ticket_reference_id: ticket.ticket_reference_id,
           contact_name: ticket.contact_name,
           ticket_owner: ticket.ticket_owner,
+          ticket_owner_id: ticket.ticket_owner_id,
           subject: ticket.subject,
           mode: ticket.mode,
           created_time: ticket.created_time,
