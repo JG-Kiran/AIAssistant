@@ -198,7 +198,7 @@ export default function AIResponsePanel({
         
         {/* --- Quick Suggestion Button --- */}
         <div className="m-2 rounded-lg">
-          <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2.5 text-white font-semibold rounded-md disabled:opacity-60 transition bg-gray-800 hover:bg-gray-500 shadow-md">
+          <button onClick={handleQuickGeneration} disabled={isLoading || !h2hChatId} className="w-full flex items-center justify-center px-4 py-2.5 text-white font-semibold rounded-md disabled:opacity-60 transition bg-blue-700 enabled:hover:bg-blue-900 shadow-md">
             {isLoading ? 'Generating...' : 'Generate Quick Suggestion'}
           </button>
         </div>
@@ -223,10 +223,10 @@ export default function AIResponsePanel({
             <button
               type="submit" 
               disabled={isLoading || !input.trim() || !h2hChatId} 
-              className="p-2 rounded-full bg-gray-400 hover:bg-gray-200 transition-colors"
+              className="p-2 rounded-full bg-blue-700 enabled:hover:bg-blue-900 disabled:opacity-60 transition-colors"
               aria-label="Send custom prompt"
             >
-              <UpArrowIcon className="h-4 w-4" />
+              <UpArrowIcon className="h-4 w-4 text-white" />
             </button>
           </div>
         </form>
