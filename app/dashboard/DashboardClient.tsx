@@ -26,6 +26,18 @@ const ProfileIcon = () => (
   </svg> 
 );
 
+const TicketsIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0h10a2 2 0 012 2v2" />
+  </svg>
+);
+
+const ChatIcon = ({ className }: { className: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
+);
+
 export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,7 +47,7 @@ export default function DashboardClient() {
 
   const { user, isLoading, agentProfile } = useSessionStore();
   const [message, setMessage] = useState('');
-  const [isProfileBarOpen, setIsProfileBarOpen] = useState(false); // State to manage the sidebar
+  const [isProfileBarOpen, setIsProfileBarOpen] = useState(false);
 
 
   // When a ticket is selected, we update the URL
@@ -48,13 +60,12 @@ export default function DashboardClient() {
     router.push('/dashboard');
   };
 
-  // When toggling the panel, we update the URL
-  const toggleAiPanel = () => {
-    if (isAiPanelOpen) {
-      router.push(`/dashboard?ticketId=${selectedTicketId}`);
-    } else {
-      router.push(`/dashboard?ticketId=${selectedTicketId}&panel=ai`);
-    }
+  const openAiPanel = () => {
+    router.push(`/dashboard?ticketId=${selectedTicketId}&panel=ai`);
+  };
+
+  const closeAiPanel = () => {
+    router.push(`/dashboard?ticketId=${selectedTicketId}`);
   };
 
   useEffect(() => {
@@ -150,7 +161,7 @@ export default function DashboardClient() {
               h2hChatId={selectedTicketId}
               onSelectSuggestion={(s) => {
                 setMessage(s);
-                router.back();
+                closeAiPanel();
               }}
             />
           </div>
@@ -158,56 +169,55 @@ export default function DashboardClient() {
 
         {/* Mobile Bottom Taskbar */}
         {selectedTicketId && (
-        <div className="h-14 z-30 flex flex-shrink-0 items-center justify-around bg-white/80 backdrop-blur-sm border-t border-gray-200">
-          {/* {selectedTicketId ? ( */}
-            <>
-              <button
-                onClick={handleBackToTickets}
-                className="flex items-center justify-center h-full w-1/2 text-slate-600 font-medium px-4"
-              >
-                <span className="text-xl">&larr;</span>
-                All Conversations
-              </button>
+          <div className="h-14 z-30 flex flex-shrink-0 items-center justify-around bg-white/80 backdrop-blur-sm border-t border-gray-200">
+            {/* Tickets Button */}
+            <button
+              onClick={handleBackToTickets}
+              className="flex flex-col items-center justify-center text-xs font-medium w-1/3 h-full text-slate-600 hover:text-purple-600 transition-colors"
+            >
+              <TicketsIcon className="h-6 w-6 mb-1" />
+              Tickets
+            </button>
 
-              <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
-                {agentProfile?.photoURL ? (
-                  <img 
-                    src={agentProfile.photoURL} 
-                    alt={`${agentProfile.name || 'Agent'}'s profile`}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                    onError={(e) => {
-                      // Fallback to initials if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      target.nextElementSibling?.classList.remove('hidden');
-                    }}
-                  />
-                ) : (
-                  <ProfileIcon />
-                )}
-              </button>
+            {/* <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
+              {agentProfile?.photoURL ? (
+                <img 
+                  src={agentProfile.photoURL} 
+                  alt={`${agentProfile.name || 'Agent'}'s profile`}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                  onError={(e) => {
+                    // Fallback to initials if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : (
+                <ProfileIcon />
+              )}
+            </button> */}
 
-              <button 
-                onClick={toggleAiPanel}
-                className={`flex flex-col items-center justify-center text-xs font-medium w-1/2 h-full transition-colors ${
-                  isAiPanelOpen ? 'text-white bg-purple-600' : 'text-purple-600 bg-white'
-              }`}>
-                <SparklesIcon className="h-6 w-6" />
-                AI Assistant
-              </button>
-            </>
-          {/* ) : ( */}
-            <>
-              {/* <button className="flex flex-col items-center justify-center text-xs text-slate-600 font-medium w-1/2 h-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-                  Filters
-              </button>
-              <button className="flex flex-col items-center justify-center text-xs text-slate-600 font-medium w-1/2 h-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-                  New Ticket
-              </button> */}
-            </>
-          {/* )} */}
+            {/* Chat Button */}
+            <button
+              onClick={closeAiPanel}
+              disabled={!isAiPanelOpen}
+              className={`flex flex-col items-center justify-center text-xs font-medium w-1/3 h-full transition-colors disabled:opacity-50
+                ${!isAiPanelOpen ? 'text-purple-600' : 'text-slate-600 hover:text-purple-600'}`}
+            >
+              <ChatIcon className="h-6 w-6 mb-1" />
+              Chat
+            </button>
+
+            {/* AI Assistant Button */}
+            <button
+              onClick={openAiPanel}
+              disabled={isAiPanelOpen}
+              className={`flex flex-col items-center justify-center text-xs font-medium w-1/3 h-full transition-colors disabled:opacity-50
+                ${isAiPanelOpen ? 'text-purple-600' : 'text-slate-600'}`}
+            >
+              <SparklesIcon className="h-6 w-6 mb-1" />
+              AI Assistant
+            </button>
         </div>
         )}
       </div>
