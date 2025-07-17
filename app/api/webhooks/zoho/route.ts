@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
           const { error } = await supabase
             .from('tickets')
             .update([ticketUpdate])
-            .select();
+            .eq('ticket_reference_id', ticketPayload.id);
           if (error) {
             console.error('❌ Error inserting ticket into Supabase:', error);
             return new Response('Database error', { status: 500 });
