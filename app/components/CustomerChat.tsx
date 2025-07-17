@@ -19,12 +19,10 @@ export default function CustomerChat({
   selectedTicketId,
   message,
   setMessage,
-  onBackToTickets,
 }: { 
   selectedTicketId: string | null,
   message: string,
   setMessage: (value: string) => void,
-  onBackToTickets: () => void,
 }) {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const { threadsByTicketId, setInitialThreadsForTicket, selectedTicketDetails: ticketDetails } = useRealtimeStore();
@@ -119,14 +117,6 @@ export default function CustomerChat({
       <header className="border-b-2 border-slate-100 pb-4 mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
-              onClick={onBackToTickets}
-              className="md:hidden p-2 rounded-full hover:bg-gray-100"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-accent line-clamp-2">
                 {ticketDetails?.subject || ticketDetails?.contact_name || 'Customer'}

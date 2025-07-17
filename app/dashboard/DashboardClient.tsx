@@ -115,7 +115,6 @@ export default function DashboardClient() {
               selectedTicketId={selectedTicketId}
               message={message}
               setMessage={setMessage}
-              onBackToTickets={handleBackToTickets}
             />
           </Panel>
           <PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
@@ -141,7 +140,6 @@ export default function DashboardClient() {
                 selectedTicketId={selectedTicketId}
                 message={message}
                 setMessage={setMessage}
-                onBackToTickets={handleBackToTickets}
               />
             ) : (
               <TicketList 
@@ -178,24 +176,6 @@ export default function DashboardClient() {
               <TicketsIcon className="h-6 w-6 mb-1" />
               Tickets
             </button>
-
-            {/* <button onClick={() => router.push('/dashboard/profile')} className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 flex-shrink-0">
-              {agentProfile?.photoURL ? (
-                <img 
-                  src={agentProfile.photoURL} 
-                  alt={`${agentProfile.name || 'Agent'}'s profile`}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                  onError={(e) => {
-                    // Fallback to initials if image fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : (
-                <ProfileIcon />
-              )}
-            </button> */}
 
             {/* Chat Button */}
             <button
