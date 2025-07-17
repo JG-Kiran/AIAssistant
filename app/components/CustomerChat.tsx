@@ -84,7 +84,7 @@ export default function CustomerChat({
             content: message,
             channel,
             to,
-            fromEmailAddress: "support@mystorage.zohodesk.com"
+            fromEmailAddress: "hello@mystorage.vn"
           }),
         });
         const result = await response.json();
