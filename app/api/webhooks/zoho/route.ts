@@ -250,6 +250,7 @@ export async function POST(request: NextRequest) {
           });
           return new Response('Missing required ticket fields', { status: 400 });
         }
+
         // Prepare new ticket data for Supabase
         const ticketUpdate: Ticket = {
           // Commented out fields are present in table but not payload.
@@ -262,7 +263,7 @@ export async function POST(request: NextRequest) {
           modified_by_id: ticketPayload.modifiedBy || null,
           created_time: ticketPayload.createdTime || null,
           modified_time: ticketPayload.modifiedTime || null,
-          status: ticketPayload.status || null,
+          // status: ticketPayload.status || null,
           due_date: ticketPayload.dueDate || null,
           is_overdue: ticketPayload.isOverDue || null,
           response_due_date: ticketPayload.responseDueDate || null,
@@ -296,6 +297,11 @@ export async function POST(request: NextRequest) {
           ticket_on_hold_time: ticketPayload.onholdTime || '0',
           // child_ticket_count:
         };
+
+        // Ignore SUCCESS and PENDING status changes
+        if (ticketPayload.status && !['SUCCESS', 'PENDING'].includes(ticketPayload.status.toUpperCase())) {
+          ticketUpdate.status = ticketPayload.status;
+        }
 
         try {
           const { error } = await supabase
