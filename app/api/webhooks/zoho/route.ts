@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
         try {
           const { error } = await supabase
             .from('tickets')
-            .insert([ticketUpdate])
+            .update([ticketUpdate])
             .select();
           if (error) {
             console.error('❌ Error inserting ticket into Supabase:', error);
