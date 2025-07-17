@@ -143,7 +143,10 @@ export default function TicketList({
       <div className="flex items-center justify-between border-b border-gray-200 flex-shrink-0">
         <FilterDropdown />
         <button 
-          onClick={() => setIsSearchVisible(!isSearchVisible)}
+          onClick={() => {
+            setIsSearchVisible(!isSearchVisible);
+            setIsFilterVisible(false);
+          }}
           className={`p-2 rounded-md transition-colors hover:bg-gray-100 ${isSearchVisible ? 'border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500'}`}
           aria-label="Toggle search"
         >
