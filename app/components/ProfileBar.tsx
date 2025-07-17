@@ -64,7 +64,7 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
                 router.push('/dashboard/ai-instructions');
                 setIsOpen(false);
               }}
-              className="w-full text-left px-4 py-3 bg-sky-blue text-primary rounded-lg hover:bg-blue-200 font-medium transition-colors"
+              className="w-full text-left px-4 py-3 bg-gray-200 text-black rounded-lg hover:bg-gray-300 font-medium transition-colors"
             >
               AI Instructions
             </button>
@@ -73,7 +73,7 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
                 router.push('/dashboard/profile');
                 setIsOpen(false);
               }}
-              className="w-full text-left px-4 py-3 bg-light-orange text-secondary rounded-lg hover:bg-orange-200 font-medium transition-colors"
+              className="w-full text-left px-4 py-3 bg-gray-200 text-black rounded-lg hover:bg-gray-300 font-medium transition-colors"
             >
               View Profile
             </button>
