@@ -98,7 +98,7 @@ export default function DashboardClient() {
   }, [router]);
 
   return (
-    <main className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
+    <main className="flex flex-col h-dvh w-screen overflow-hidden bg-gray-50">
       {/* ----- DESKTOP LAYOUT ----- */}
       <TopNavBar onProfileClick={() => setIsProfileBarOpen((open) => !open)} />
 
