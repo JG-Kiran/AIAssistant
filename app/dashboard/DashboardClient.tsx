@@ -167,9 +167,7 @@ export default function DashboardClient() {
 
         {/* Mobile Bottom Taskbar */}
         {selectedTicketId && (
-          <div 
-            style={{ transform: 'translateZ(0)' }}
-            className="h-14 z-30 flex flex-shrink-0 items-center justify-around bg-white/80 backdrop-blur-sm border-t border-gray-200"
+          <div className="h-14 z-30 flex flex-shrink-0 items-center justify-around bg-white/80 backdrop-blur-sm border-t border-gray-200"
           >
             {/* Tickets Button */}
             <button

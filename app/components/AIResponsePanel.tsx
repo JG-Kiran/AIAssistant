@@ -143,6 +143,17 @@ export default function AIResponsePanel({
     });
   };
 
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!isLoading && input.trim() && h2hChatId) {
+        // Manually trigger form submission
+        handleCustomSubmit(e as any); // Type cast for compatibility
+      }
+    }
+    // Shift+Enter will insert a new line by default, so no need to handle it
+  };
+
   return (
     <aside className="w-full h-full flex flex-col min-h-0 p-2 bg-background-gray border-l border-slate-200 ">
       {/* Header */}
@@ -219,6 +230,7 @@ export default function AIResponsePanel({
               placeholder="Write a custom prompt..." 
               value={input} 
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleTextareaKeyDown}
             />
             <button
               type="submit" 
