@@ -39,6 +39,7 @@ export type TicketFilters = {
   searchText: string; 
   searchType: 'name' | 'reference'; 
   modeFilter: string; 
+  statusFilter: string;
   view: 'all' | 'my-tickets' | 'unassigned' | 'unread';
 };
 
@@ -71,6 +72,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     searchText: '',
     searchType: 'name',
     modeFilter: 'all',
+    statusFilter: 'all',
     view: 'all',
   },
   channel: null,
@@ -303,6 +305,15 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
     // Apply channel filter
     if (filters.modeFilter !== 'all') {
       query = query.eq('mode', filters.modeFilter);
+    }
+
+    // Apply status filter
+    if (filters.statusFilter !== 'all') {
+      if (filters.statusFilter === 'Others') {
+        query = query.not('status', 'in', '(Open,Closed)');
+      } else {
+        query = query.eq('status', filters.statusFilter);
+      }
     }
 
     const { data, error } = await query;

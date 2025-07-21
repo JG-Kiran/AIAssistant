@@ -93,7 +93,7 @@ export default function TicketList({
       await fetchTickets(0);
     }
     fetchWithFilters();
-  }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.view, fetchTickets]);
+  }, [debouncedSearchText, filters.searchType, filters.modeFilter, filters.statusFilter, filters.view, fetchTickets]);
 
   // IntersectionObserver for infinite scroll
   const observer = useRef<IntersectionObserver>();
@@ -174,7 +174,7 @@ export default function TicketList({
         </div>
 
         {/* Collapsible Filter Options */}
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFilterVisible ? 'max-h-40 mt-2' : 'max-h-0'}`}> 
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isFilterVisible ? 'max-h-72 mt-2' : 'max-h-0'}`}> 
           <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
             <div>
               <label className="text-sm font-medium text-text">Search By</label>
@@ -201,6 +201,19 @@ export default function TicketList({
                 <option value="ZaloOA">Zalo</option>
                 <option value="Phone">Phone</option>
                 <option value="Web">Web Chat</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-text">Status</label>
+              <select
+                value={filters.statusFilter}
+                onChange={(e) => setFilters({ statusFilter: e.target.value })}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+              >
+                <option value="all">All Status</option>
+                <option value="Open">Open</option>
+                <option value="Closed">Closed</option>
+                <option value="Others">Others</option>
               </select>
             </div>
           </div>
