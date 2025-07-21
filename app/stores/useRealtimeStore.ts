@@ -40,7 +40,7 @@ export type TicketFilters = {
   searchType: 'name' | 'reference'; 
   modeFilter: string; 
   statusFilter: string;
-  view: 'all' | 'my-tickets' | 'unassigned' | 'unread';
+  view: 'all' | 'my-tickets' | 'unread';
 };
 
 
@@ -286,14 +286,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       .order('modified_time', { ascending: false })
       .range(from, to);
 
-    // Apply view filter (All, My Tickets, Unassigned, Unread)
+    // Apply view filter (All, My Tickets, Unread)
     if (filters.view === 'my-tickets') {
       const currentUserName = await getUserName();
       if (currentUserName) {
         query = query.eq('ticket_owner', currentUserName);
       }
-    } else if (filters.view === 'unassigned') {
-      query = query.is('ticket_owner', null);
     }
 
     // Apply search filter
@@ -309,11 +307,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
 
     // Apply status filter
     if (filters.statusFilter !== 'all') {
-      if (filters.statusFilter === 'Others') {
-        query = query.not('status', 'in', '(Open,Closed)');
-      } else {
-        query = query.eq('status', filters.statusFilter);
-      }
+      query = query.eq('status', filters.statusFilter);
     }
 
     const { data, error } = await query;

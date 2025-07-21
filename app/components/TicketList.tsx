@@ -142,35 +142,37 @@ export default function TicketList({
       {/* Header with Dropdown */}
       <div className="flex items-center justify-between border-b border-gray-200 flex-shrink-0">
         <FilterDropdown />
-        <button 
-          onClick={() => {
-            setIsSearchVisible(!isSearchVisible);
-            setIsFilterVisible(false);
-          }}
-          className={`p-2 rounded-md transition-colors hover:bg-gray-100 ${isSearchVisible ? 'border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500'}`}
-          aria-label="Toggle search"
-        >
-          <SearchIcon className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Search and Filter Section */}
-      <div className="my-1 pr-2 flex-shrink-0">
-        <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-40' : 'max-h-0'}`}>
-          <input
-            type="text"
-            placeholder={filters.searchType === 'name' ? "Search by name..." : "Search by reference..."}
-            className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary"
-            value={filters.searchText}
-            onChange={(e) => setFilters({ searchText: e.target.value })}
-          />
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => {
+              setIsSearchVisible(!isSearchVisible);
+              setIsFilterVisible(false);
+            }}
+            className={`p-2 rounded-md transition-colors hover:bg-gray-100 ${isSearchVisible ? 'border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500'}`}
+            aria-label="Toggle search"
+          >
+            <SearchIcon className="h-5 w-5" />
+          </button>
           <button 
             onClick={() => setIsFilterVisible(!isFilterVisible)}
-            className={`p-2 border rounded-md transition-colors ${isFilterVisible ? 'bg-sky-blue border-primary text-primary' : 'border-gray-300 text-gray-500 hover:bg-gray-100'}`}
+            className={`p-2 rounded-md transition-colors hover:bg-gray-100 ${isFilterVisible ? 'border-blue-300 text-blue-600' : 'border-gray-300 text-gray-500'}`}
             aria-label="Toggle filters"
           >
             <FilterIcon className="h-5 w-5" />
           </button>
+        </div>
+      </div>
+
+      {/* Search and Filter Section */}
+      <div className="my-1 pr-2 flex-shrink-0">
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${isSearchVisible ? 'max-h-40' : 'max-h-0'}`}>
+          <input
+            type="text"
+            placeholder={filters.searchType === 'name' ? "Search by name..." : "Search by reference..."}
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary"
+            value={filters.searchText}
+            onChange={(e) => setFilters({ searchText: e.target.value })}
+          />
         </div>
 
         {/* Collapsible Filter Options */}
@@ -213,7 +215,8 @@ export default function TicketList({
                 <option value="all">All Status</option>
                 <option value="Open">Open</option>
                 <option value="Closed">Closed</option>
-                <option value="Others">Others</option>
+                <option value="PENDING">PENDING</option>
+                <option value="On Hold">On Hold</option>
               </select>
             </div>
           </div>
