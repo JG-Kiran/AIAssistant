@@ -109,6 +109,33 @@ A modern, AI-powered customer support and sales portal for MyStorage agents, fea
 
 ---
 
+## 🚀 Deployment with Vercel
+
+This project is optimized for deployment on Vercel, the platform built by the creators of Next.js.
+
+**Push to a Git Repository:** Push your project to a GitHub, GitLab, or Bitbucket repository.
+
+**Import Project on Vercel:**
+
+- Log in to your Vercel account and click "Add New... > Project".
+- Select your Git repository. Vercel will automatically detect that it's a Next.js project.
+
+**Configure Environment Variables:**
+
+- In your Vercel project settings, navigate to the "Environment Variables" section.
+- Add all the variables from your .env.local file. This is a critical step for the application to connect to Supabase, Zoho, and Gemini in production.
+
+**Deploy:**
+
+- Click the "Deploy" button. Vercel will build and deploy your application.
+- Future pushes to your main branch will automatically trigger new deployments.
+
+**Set up Zoho Desk Webhooks:**
+
+- Once deployed, take your production URL (e.g., https://your-app.vercel.app) and point your Zoho Desk ticket and thread webhooks to `/api/webhooks/zoho/`.
+
+---
+
 ## 📚 AI Training & Product Knowledge
 
 - **AI prompt and knowledge base** are in `/app/lib/trainprompt.ts`, `/app/lib/insights.ts`, and `/app/lib/markdowns/` (product, pricing, comparisons, objection handling, etc.).
