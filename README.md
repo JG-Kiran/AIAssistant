@@ -9,7 +9,7 @@ A modern, AI-powered customer support and sales portal for MyStorage agents, fea
 - **Unified Inbox & Ticketing**: View, search, and filter tickets synced in real-time from Zoho Desk via webhooks.
 - **Multi-Channel Support**: Handle tickets from Email, Facebook, Instagram, Web, WhatsApp, Zalo, and more.
 - **Chat-Style Ticket View**: Modern chat UI for each ticket, with clear agent/customer separation and date grouping.
-- **AI Response Suggestions**: Google Gemini suggests 2–3 professional replies per ticket, tailored to MyStorage's brand and context.
+- **AI Response Suggestions**: Google Gemini suggests professional replies to potential customers tailored to MyStorage's brand and context.
 - **Custom AI Prompts**: Agents can write custom instructions to the AI for highly tailored responses.
 - **Send Replies to Zoho Desk**: Agents can review, edit, and send responses directly to Zoho Desk from the portal.
 - **Profile & Session Management**: Secure login via Supabase (email/magic link/password) or Zoho Desk OAuth, with agent profile sync.
@@ -136,10 +136,14 @@ This project is optimized for deployment on Vercel, the platform built by the cr
 
 ---
 
-## 📚 AI Training & Product Knowledge
+## 📚 AI Configuration & Product Knowledge
 
-- **AI prompt and knowledge base** are in `/app/lib/trainprompt.ts`, `/app/lib/insights.ts`, and `/app/lib/markdowns/` (product, pricing, comparisons, objection handling, etc.).
+- **AI knowledge base** is in `/app/lib/markdowns/` (product, pricing, comparisons, objection handling, etc.).
 - **Update these files** to change what the AI knows and how it responds.
+- **AI System Prompt** is configured in `app/api/system-prompt/route.ts` defines the personality of the AI used and can be edited directly via the frontend UI (code for frontend at `app/dashboard/ai-instructions/page.tsx`)
+- **Custom Request** can be prompted by users to the AI to handle their specific queries besides generating customer responses. Provided to the model during POST request in `/app/components/AIResponsePanel.tsx` as an input (customPrompt).
+- **Existing Conversation with Customer** is also given to the model as an input (h2hConversation) during POST request similar to the custom request.
+- **Final AI Configuration** is in `/app/api/copilot/route.ts`. This organises all the above information needed by the AI for it to efficiently search through them. This file also sets the model of the LLM used (currently gemini-2.5-flash)
 
 ---
 
