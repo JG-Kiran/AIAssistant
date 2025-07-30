@@ -1,6 +1,6 @@
 'use client';
 
-import { convert } from 'html-to-text';
+//import { convert } from 'html-to-text';
 import type { Thread } from '../stores/useRealtimeStore';
 
 // --- Helper Functions for Date Logic ---
@@ -24,6 +24,76 @@ const formatDateSeparator = (date: Date) => {
         month: 'long',
         day: 'numeric',
     });
+};
+
+// --- Helper Functions to Remove URLs in Square Brackets ---
+const removeSquareBracketContent = (text: string): string => {
+    console.log(`[removeSquareBracketContent] Processing text: "${text}"`);
+    if (!text) {
+        console.log(`[removeSquareBracketContent] Empty text, returning empty string`);
+        return '';
+    }
+    
+    // Remove all content within square brackets (including the brackets)
+    const bracketRegex = /\[[^\]]+\]/gi;
+    const cleanedText = text.replace(bracketRegex, '').trim();
+    
+    console.log(`[removeSquareBracketContent] Original: "${text}"`);
+    console.log(`[removeSquareBracketContent] Cleaned: "${cleanedText}"`);
+    
+    return cleanedText;
+};
+
+const truncateAtLongDashes = (text: string): string => {
+    console.log(`[truncateAtLongDashes] Processing text: "${text}"`);
+    if (!text) {
+        console.log(`[truncateAtLongDashes] Empty text, returning empty string`);
+        return '';
+    }
+    
+    // Regex to match long sequences of repetitive characters (5 or more)
+    // This will match: _____, -----, ===== , *****, etc.
+    const longDashRegex = /([_\-=*#~]{5,})/;
+    const match = text.match(longDashRegex);
+    
+    if (match) {
+        const dashPosition = match.index!;
+        const truncatedText = text.substring(0, dashPosition).trim();
+        
+        console.log(`[truncateAtLongDashes] Found long dash sequence "${match[0]}" at position ${dashPosition}`);
+        console.log(`[truncateAtLongDashes] Original: "${text}"`);
+        console.log(`[truncateAtLongDashes] Truncated: "${truncatedText}"`);
+        
+        return truncatedText;
+    }
+    
+    console.log(`[truncateAtLongDashes] No long dash sequences found, returning original text`);
+    return text;
+};
+
+// --- Message Content Component ---
+interface MessageContentProps {
+    message: string;
+    authorType: 'agent' | 'customer';
+}
+
+const MessageContent = ({ message, authorType }: MessageContentProps) => {
+    console.log(`[MessageContent] ========== NEW MESSAGE ==========`);
+    console.log(`[MessageContent] Rendering message for ${authorType}: "${message}"`);
+    
+    // Remove any content within square brackets and display clean text
+    const bracketCleanedMessage = removeSquareBracketContent(message);
+    console.log(`[MessageContent] After bracket removal: "${bracketCleanedMessage}"`);
+    
+    // Truncate message at long dash sequences
+    const finalMessage = truncateAtLongDashes(bracketCleanedMessage);
+    console.log(`[MessageContent] Final message: "${finalMessage}"`);
+    
+    return (
+        <span className="whitespace-pre-wrap">
+            {finalMessage}
+        </span>
+    );
 };
 
 interface ChatLogProps {
@@ -54,7 +124,7 @@ export default function ChatLog({ messages }: ChatLogProps) {
         const authorType = msg.author_type === 'AGENT' || msg.direction === 'out' ? 'agent' : 'customer';
         const prevAuthorType = prevMsg ? (prevMsg.author_type === 'AGENT' || prevMsg.direction === 'out' ? 'agent' : 'customer') : null;
         const isFirstInSequence = authorType !== prevAuthorType;
-        const plainText = msg.message || '';
+        const messageContent = msg.message || '';
 
         // Render the message row
         chatElements.push(
@@ -67,7 +137,9 @@ export default function ChatLog({ messages }: ChatLogProps) {
                         <div className="flex items-end gap-2 min-w-0">
                             <div className="bg-white text-slate-800 rounded-xl p-3 shadow-sm break-words min-w-0">
                                 {isFirstInSequence && <p className="font-bold text-sm text-slate-700 mb-1">{msg.author_name}</p>}
-                                <p className="text-base whitespace-pre-wrap">{plainText}</p>
+                                <div className="text-base">
+                                    <MessageContent message={messageContent} authorType={authorType} />
+                                </div>
                             </div>
                             <span className="text-xs text-slate-400 mb-1">{currentMessageDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
@@ -80,7 +152,9 @@ export default function ChatLog({ messages }: ChatLogProps) {
                         <span className="text-xs text-slate-400 mb-1">{currentMessageDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                         <div className="bg-blue-600 text-white rounded-xl p-3 shadow-sm break-words min-w-0">
                             {isFirstInSequence && <p className="font-bold text-sm text-blue-200 mb-1">{msg.author_name}</p>}
-                            <p className="text-base whitespace-pre-wrap">{plainText}</p>
+                            <div className="text-base">
+                                <MessageContent message={messageContent} authorType={authorType} />
+                            </div>
                         </div>
                         {/* <div className="w-8 shrink-0">{isFirstInSequence && <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white">A</div>}</div> */}
                     </div>
