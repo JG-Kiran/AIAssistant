@@ -19,6 +19,16 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
 
   const [imageError, setImageError] = useState(false);
 
+  // Define users with access to Knowledge Base - you can modify this list as needed
+  const knowledgeBaseUsers = [
+    'danh@mystorage.vn',
+    'test@email.com'
+    // Add more emails here
+  ];
+
+  // Check if current user has access to Knowledge Base
+  const hasKnowledgeBaseAccess = userEmail && knowledgeBaseUsers.includes(userEmail);
+
   useEffect(() => {
     setImageError(false);
   }, [agentProfile?.photoURL]);
@@ -27,6 +37,13 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
     await supabase.auth.signOut();
     clearSession(); 
     router.push('/login');
+  };
+
+  const handleKnowledgeBaseAction = () => {
+    // Your knowledge base action here
+    console.log('Knowledge Base action triggered');
+    // Example: router.push('/knowledge-base');
+    setIsOpen(false);
   };
 
   return (
@@ -77,6 +94,15 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
             >
               View Profile
             </button>
+            {/* Knowledge Base button - only for specific users */}
+            {hasKnowledgeBaseAccess && (
+              <button
+                onClick={handleKnowledgeBaseAction}
+                className="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium transition-colors border border-blue-200"
+              >
+               Knowledge Base
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-3 bg-red-50 text-error-red rounded-lg hover:bg-red-100 font-medium transition-colors"
