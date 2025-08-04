@@ -8,15 +8,8 @@ import { google } from '@ai-sdk/google';
 import { customerServiceGuidelines } from '@/lib/insights'; // Assuming path is correct
 // We no longer import standardTrainingPrompt
 
-// Import all the product content
-import { comparisonsEnContent } from '@/lib/markdowns/comparisons_en';
-import { digitalTeaserContent } from '@/lib/markdowns/digital_teaser';
-import { sizeVisualisationContent } from '@/lib/markdowns/size_visualisation';
-import { whyWeAreTheBestContent } from '@/lib/markdowns/why_we_are_the_best';
-import { objectionHandlingContent } from '@/lib/markdowns/objection_handling';
-import { brochureContent } from '@/lib/markdowns/brochure';
-import { comparisonsVnContent } from '@/lib/markdowns/comparisons_vn';
-import { priceListContent } from '@/lib/markdowns/price_list';
+// Import supabase client instead of individual markdown files
+import { supabase } from '@/lib/supabase';
 
 export const maxDuration = 30; // Optional: Allow longer serverless function execution
 
@@ -32,6 +25,27 @@ export async function POST(req: Request) {
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
     const promptResponse = await fetch(`${baseUrl}/api/system-prompt`);
     const customSystemPrompt = await promptResponse.text();
+
+    // 1b. Fetch knowledge base content from Supabase
+    const { data: knowledgeData, error: knowledgeError } = await supabase
+      .from('knowledge_base')
+      .select('*')
+      .single();
+
+    if (knowledgeError) {
+      console.error('Error fetching knowledge base:', knowledgeError);
+      throw new Error('Failed to fetch knowledge base content');
+    }
+
+    // Map the column names to the original variable names
+    const comparisonsEnContent = knowledgeData.comparisons_en;
+    const digitalTeaserContent = knowledgeData.digital_teaser;
+    const sizeVisualisationContent = knowledgeData.introduce_our_service; // Special mapping
+    const whyWeAreTheBestContent = knowledgeData.why_we_are_the_best;
+    const objectionHandlingContent = knowledgeData.objection_handling;
+    const brochureContent = knowledgeData.brochure;
+    const comparisonsVnContent = knowledgeData.comparisons_vn;
+    const priceListContent = knowledgeData.price_list;
 
     // 5. Construct the system prompt for the Expert Agent.
     // This prompt combines the dynamically-selected context with the conversation history.
