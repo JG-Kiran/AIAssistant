@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     // Map the column names to the original variable names
     const comparisonsEnContent = knowledgeData.comparisons_en;
     const digitalTeaserContent = knowledgeData.digital_teaser;
-    const sizeVisualisationContent = knowledgeData.introduce_our_service; // Special mapping
+    const introduceOurService = knowledgeData.introduce_our_service; // Special mapping
     const whyWeAreTheBestContent = knowledgeData.why_we_are_the_best;
     const objectionHandlingContent = knowledgeData.objection_handling;
     const brochureContent = knowledgeData.brochure;
@@ -71,7 +71,7 @@ Knowing the agent to customer conversation, YOUR TASK is to address the sales ag
 
 If the request asks to know more about MyStorage:
     ***INTRODUCE US WITH THIS FLOW***
-    ${sizeVisualisationContent}
+    ${introduceOurService}
     ---------------------------
     If the query is more specific, refer to the specific steps if can be found
      e.g. "How do the sizes and quotations work"; --> refer to ## 4. QUOTATION & PRICING
