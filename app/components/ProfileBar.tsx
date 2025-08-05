@@ -40,9 +40,8 @@ export default function ProfileBar({ isOpen, setIsOpen }: ProfileBarProps) {
   };
 
   const handleKnowledgeBaseAction = () => {
-    // Your knowledge base action here
-    console.log('Knowledge Base action triggered');
-    // Example: router.push('/knowledge-base');
+    // Navigate to knowledge base page
+    router.push('/dashboard/knowledge-base');
     setIsOpen(false);
   };
 
