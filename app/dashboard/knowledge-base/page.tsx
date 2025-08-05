@@ -3,49 +3,48 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface FileUpload {
+interface KnowledgeBaseOption {
   label: string;
   key: string;
-  file: File | null;
 }
 
 export default function KnowledgeBasePage() {
   const router = useRouter();
   
-  const [uploads, setUploads] = useState<FileUpload[]>([
-    { label: 'Comparisons (English)', key: 'comparisons_en', file: null },
-    { label: 'Digital Teaser', key: 'digital_teaser', file: null },
-    { label: 'Introduce Our Service', key: 'introduce_our_service', file: null },
-    { label: 'Why We Are The Best', key: 'why_we_are_the_best', file: null },
-    { label: 'Objection Handling', key: 'objection_handling', file: null },
-    { label: 'Brochure', key: 'brochure', file: null },
-    { label: 'Comparisons (Vietnamese)', key: 'comparisons_vn', file: null },
-    { label: 'Price List', key: 'price_list', file: null },
-    { label: 'Test', key: 'test', file: null },
-  ]);
+  const knowledgeBaseOptions: KnowledgeBaseOption[] = [
+    { label: 'Comparisons (English)', key: 'comparisons_en' },
+    { label: 'Digital Teaser', key: 'digital_teaser' },
+    { label: 'Introduce Our Service', key: 'introduce_our_service' },
+    { label: 'Why We Are The Best', key: 'why_we_are_the_best' },
+    { label: 'Objection Handling', key: 'objection_handling' },
+    { label: 'Brochure', key: 'brochure' },
+    { label: 'Comparisons (Vietnamese)', key: 'comparisons_vn' },
+    { label: 'Price List', key: 'price_list' },
+    { label: 'Test', key: 'test' },
+  ];
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileChange = (index: number, file: File | null) => {
-    setUploads(prev => prev.map((upload, i) => 
-      i === index ? { ...upload, file } : upload
-    ));
+  const handleFileChange = (file: File | null) => {
+    setSelectedFile(file);
   };
 
   const handleUpload = async () => {
+    if (!selectedFile || !selectedOption) {
+      alert('Please select both a file and a knowledge base field.');
+      return;
+    }
+
     setIsUploading(true);
     
     try {
       const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('field', selectedOption);
       
-      // Add each file to the FormData with its corresponding key
-      uploads.forEach(upload => {
-        if (upload.file) {
-          formData.append(upload.key, upload.file);
-        }
-      });
-      
-      console.log('Uploading files to knowledge base...');
+      console.log('Uploading file to knowledge base...');
       
       const response = await fetch('/api/knowledge-base', {
         method: 'POST',
@@ -59,10 +58,11 @@ export default function KnowledgeBasePage() {
       }
       
       console.log('Upload successful:', result);
-      alert(`Successfully updated ${result.updatedFields?.length || 0} knowledge base entries!`);
+      alert(`Successfully processed and updated the ${knowledgeBaseOptions.find(opt => opt.key === selectedOption)?.label} field with AI-generated markdown content!`);
       
-      // Clear the uploaded files after successful upload
-      setUploads(prev => prev.map(upload => ({ ...upload, file: null })));
+      // Clear the uploaded file and selection after successful upload
+      setSelectedFile(null);
+      setSelectedOption('');
       
     } catch (error) {
       console.error('Upload failed:', error);
@@ -72,7 +72,7 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  const hasFilesToUpload = uploads.some(upload => upload.file);
+  const canUpload = selectedFile && selectedOption && !isUploading;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -93,67 +93,87 @@ export default function KnowledgeBasePage() {
           </div>
         </div>
 
-        {/* File Uploads Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {uploads.map((upload, index) => (
-            <div key={upload.key} className="bg-white rounded-lg shadow-sm p-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                {upload.label}
-              </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 transition-colors">
-                <input
-                  type="file"
-                  accept=".txt,.pdf,.doc,.docx,.md,.rtf"
-                  onChange={(e) => handleFileChange(index, e.target.files?.[0] || null)}
-                  className="hidden"
-                  id={`file-${index}`}
-                />
-                <label
-                  htmlFor={`file-${index}`}
-                  className="cursor-pointer flex flex-col items-center"
-                >
-                  <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  {upload.file ? (
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-green-600">{upload.file.name}</p>
-                      <p className="text-xs text-gray-500">{(upload.file.size / 1024).toFixed(1)} KB</p>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-500">PDF, TXT, DOC, DOCX, MD, RTF</p>
-                    </div>
-                  )}
-                </label>
-              </div>
-              {upload.file && (
-                <button
-                  onClick={() => handleFileChange(index, null)}
-                  className="mt-2 text-sm text-red-600 hover:text-red-800"
-                >
-                  Remove file
-                </button>
+        {/* File Upload Section */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Upload Knowledge Base File</h3>
+          
+          {/* File Upload Box */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors mb-6">
+            <input
+              type="file"
+              accept=".txt,.pdf,.doc,.docx,.md,.rtf,.html,.xml,.csv,.ppt,.pptx,.xls,.xlsx,.odt,.ods,.odp"
+              onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer flex flex-col items-center"
+            >
+              <svg className="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              {selectedFile ? (
+                <div className="text-center">
+                  <p className="text-lg font-medium text-green-600">{selectedFile.name}</p>
+                  <p className="text-sm text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-lg text-gray-600">Click to upload or drag and drop</p>
+                  <p className="text-sm text-gray-500">Any document type (PDF, DOC, DOCX, TXT, MD, RTF, HTML, PPT, XLS, etc.)</p>
+                  <p className="text-xs text-gray-400">Max file size: 20MB</p>
+                </div>
               )}
-            </div>
-          ))}
-        </div>
+            </label>
+          </div>
 
-        {/* Upload Button */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+          {selectedFile && (
+            <div className="flex justify-center mb-6">
+              <button
+                onClick={() => handleFileChange(null)}
+                className="text-sm text-red-600 hover:text-red-800"
+              >
+                Remove file
+              </button>
+            </div>
+          )}
+
+          {/* Dropdown Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Knowledge Base Field
+            </label>
+            <select
+              value={selectedOption}
+              onChange={(e) => setSelectedOption(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Choose a field...</option>
+              {knowledgeBaseOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Upload Button */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Ready to Upload</h3>
+              <h4 className="text-md font-medium text-gray-900">Ready to Upload</h4>
               <p className="text-sm text-gray-600">
-                {uploads.filter(upload => upload.file).length} file(s) selected
+                {selectedFile && selectedOption 
+                  ? `File: ${selectedFile.name} → ${knowledgeBaseOptions.find(opt => opt.key === selectedOption)?.label}`
+                  : 'Select a file and field to continue'
+                }
               </p>
             </div>
             <button
               onClick={handleUpload}
-              disabled={!hasFilesToUpload || isUploading}
+              disabled={!canUpload}
               className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                hasFilesToUpload && !isUploading
+                canUpload
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
@@ -164,10 +184,10 @@ export default function KnowledgeBasePage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Uploading...
+                  Processing with AI...
                 </div>
               ) : (
-                'Upload Files'
+                'Upload & Process with AI'
               )}
             </button>
           </div>
