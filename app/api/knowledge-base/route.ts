@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
+// PDF.js removed due to serverless compatibility issues
 
 // File processing utilities
 async function extractTextFromFile(file: File): Promise<string> {
@@ -15,8 +15,8 @@ async function extractTextFromFile(file: File): Promise<string> {
       return text;
     } 
     else if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
-      // Handle PDF files
-      return await extractTextFromPDF(file);
+      // PDF support disabled due to serverless compatibility issues
+      throw new Error('PDF files are not supported. Please convert to DOCX, TXT, or MD format.');
     }
     else if (
       fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
@@ -42,22 +42,13 @@ async function extractTextFromFile(file: File): Promise<string> {
   }
 }
 
-async function extractTextFromPDF(file: File): Promise<string> {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const data = await pdf(buffer);
-    return data.text.trim();
-  } catch (error) {
-    console.error('PDF parsing error:', error);
-    throw new Error('Failed to extract text from PDF file.');
-  }
-}
+// PDF extraction function removed due to serverless compatibility
 
 async function extractTextFromDOCX(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer });
+    const buffer = Buffer.from(arrayBuffer);
+    const result = await mammoth.extractRawText({ buffer });
     return result.value.trim();
   } catch (error) {
     console.error('DOCX parsing error:', error);
